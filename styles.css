@@ -52,9 +52,9 @@ select {
 
 .phone-app {
   position: relative;
-  width: min(100%, 430px);
+  width: min(100%, 402px);
   min-height: 100vh;
-  padding: 14px 16px 106px;
+  padding: 14px 14px 106px;
   overflow-x: hidden;
   background:
     radial-gradient(rgba(53, 32, 29, 0.06) 0.8px, transparent 0.8px) 0 0 / 12px 12px,
@@ -164,7 +164,7 @@ select {
 .date-line {
   margin: 0 0 8px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 650;
   letter-spacing: 0;
 }
@@ -710,6 +710,11 @@ h3 {
   padding: 13px;
 }
 
+.today-task-panel {
+  position: relative;
+  padding: 14px;
+}
+
 .day-panel-head {
   display: grid;
   gap: 12px;
@@ -725,13 +730,25 @@ h3 {
 }
 
 .person-switch button {
-  min-height: 34px;
+  display: grid;
+  gap: 2px;
+  min-height: 44px;
   border: 0;
   border-radius: 14px;
   background: transparent;
   color: var(--muted);
   font-size: 12px;
   font-weight: 820;
+}
+
+.person-switch button strong {
+  font-size: 12px;
+}
+
+.person-switch button small {
+  color: inherit;
+  font-size: 10px;
+  font-weight: 720;
 }
 
 .person-switch button.active {
@@ -741,40 +758,109 @@ h3 {
 
 .quick-actions {
   display: grid;
-  gap: 10px;
+  gap: 9px;
   margin: 12px 0;
 }
 
 .action-section {
   display: grid;
-  gap: 7px;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 3px 2px;
+  background: transparent;
 }
 
 .action-section h3 {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 26px;
+  font-weight: 760;
 }
 
 .action-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .action-tile {
-  min-height: 52px;
+  min-height: 28px;
   border: 0;
-  border-radius: 20px;
-  background: var(--tile);
-  font-size: 13px;
-  font-weight: 860;
+  border-radius: 999px;
+  background: #eef8fc;
+  color: #5a747f;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.action-tile::before {
+  content: none;
 }
 
 .action-tile.penalty {
-  color: #9d4d49;
+  background: #fff0ef;
+  color: #a95a55;
+}
+
+.action-section.base .action-tile {
+  background: #edf8ef;
+  color: #59775d;
+}
+
+.action-section.bonus .action-tile {
+  background: #fff4da;
+  color: #8a6c2d;
+}
+
+.action-section.drink .action-tile {
+  background: #eef8fc;
+  color: #5a747f;
+}
+
+.action-section.penalty .action-tile {
+  background: #fff0ef;
+  color: #a95a55;
 }
 
 .day-log {
+  display: grid;
+  gap: 8px;
+}
+
+.today-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.today-summary div {
+  padding: 10px;
+  border-radius: 16px;
+  background: #f6f2eb;
+}
+
+.today-summary small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.today-summary strong {
+  display: block;
+  margin-top: 2px;
+  color: #62a56c;
+  font-size: 18px;
+}
+
+.today-summary strong.negative {
+  color: #d97874;
+}
+
+.today-work-list {
   display: grid;
   gap: 8px;
 }
@@ -1078,12 +1164,49 @@ h3 {
   padding: 12px;
 }
 
+.selected-day-ledger {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.history-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.history-head span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: var(--tile);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
 .person-ledger {
   display: grid;
   gap: 9px;
   padding: 10px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.58);
+}
+
+.person-history {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.person-history .person-ledger-head small {
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 920;
 }
 
 .person-ledger-head {
@@ -1204,6 +1327,38 @@ h3 {
   text-align: center;
 }
 
+.score-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.score-row strong {
+  display: block;
+  font-size: 12px;
+}
+
+.score-row small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.score-row span {
+  color: #62a56c;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.score-row.minus span {
+  color: #d97874;
+}
+
 .login-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1309,9 +1464,9 @@ h3 {
   bottom: 12px;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: min(calc(100% - 44px), 386px);
-  padding: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: min(calc(100% - 30px), 374px);
+  padding: 7px;
   border: 2px solid rgba(255, 255, 255, 0.75);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.66);
@@ -1322,7 +1477,7 @@ h3 {
 .bottom-tab {
   display: grid;
   place-items: center;
-  min-height: 54px;
+  min-height: 50px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -1332,7 +1487,7 @@ h3 {
 }
 
 .bottom-tab span {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
 }
 
@@ -1368,6 +1523,24 @@ h3 {
 .bottom-tab.active {
   background: #e7e2dd;
   color: var(--gold);
+}
+
+.floating-add {
+  position: fixed;
+  right: max(18px, calc((100vw - 402px) / 2 + 18px));
+  bottom: 94px;
+  z-index: 28;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  border-radius: 50%;
+  background: var(--gold);
+  color: white;
+  box-shadow: 0 14px 28px rgba(117, 77, 39, 0.2);
+  font-size: 28px;
+  font-weight: 650;
 }
 
 .sheet-backdrop {
@@ -1473,6 +1646,149 @@ h3 {
 
 .hidden {
   display: none !important;
+}
+
+.celebration {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: rgba(35, 30, 38, 0.18);
+  pointer-events: none;
+}
+
+.celebration-card {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 5px;
+  min-width: 248px;
+  padding: 18px 20px;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.88);
+  text-align: center;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+}
+
+.celebration.play .celebration-card {
+  animation: celebrationPop 520ms ease forwards;
+}
+
+.celebration-card strong {
+  font-size: 17px;
+}
+
+.celebration-card small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.fireworks span {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffd968;
+  opacity: 0;
+}
+
+.fireworks span:nth-child(2) {
+  left: 28%;
+  top: 28%;
+  transform: scale(0.75);
+}
+
+.fireworks span:nth-child(3) {
+  left: 72%;
+  top: 30%;
+  transform: scale(0.85);
+}
+
+.fireworks span:nth-child(4) {
+  left: 24%;
+  top: 65%;
+  transform: scale(0.62);
+}
+
+.fireworks span:nth-child(5) {
+  left: 76%;
+  top: 64%;
+  transform: scale(0.7);
+}
+
+.fireworks span:nth-child(6) {
+  left: 50%;
+  top: 20%;
+  transform: scale(0.58);
+}
+
+.celebration.play .fireworks span {
+  animation: fireworkBurst 1200ms ease-out 2;
+}
+
+.celebration.play .fireworks span:nth-child(2) {
+  animation-delay: 140ms;
+}
+
+.celebration.play .fireworks span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.celebration.play .fireworks span:nth-child(4) {
+  animation-delay: 340ms;
+}
+
+.celebration.play .fireworks span:nth-child(5) {
+  animation-delay: 440ms;
+}
+
+.celebration.play .fireworks span:nth-child(6) {
+  animation-delay: 540ms;
+}
+
+@keyframes fireworkBurst {
+  0% {
+    opacity: 0;
+    box-shadow:
+      0 0 #ffd968,
+      0 0 #ff9aa5,
+      0 0 #8fd8ff,
+      0 0 #9fe3a6,
+      0 0 #ffc781,
+      0 0 #d9b7ff,
+      0 0 #ff9aa5,
+      0 0 #8fd8ff;
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    box-shadow:
+      0 -68px #ffd968,
+      48px -48px #ff9aa5,
+      68px 0 #8fd8ff,
+      48px 48px #9fe3a6,
+      0 68px #ffc781,
+      -48px 48px #d9b7ff,
+      -68px 0 #ff9aa5,
+      -48px -48px #8fd8ff;
+  }
+}
+
+@keyframes celebrationPop {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @media (max-width: 380px) {

@@ -17,7 +17,7 @@
             <button class="round-button" id="wishToggle" type="button" aria-label="心愿小熊">♡</button>
           </div>
           <div class="hero-copy">
-            <p class="date-line">周日，6月21日，2026</p>
+            <p class="date-line" id="todayDateLine">2026年6月21日 | 周日</p>
             <h1 id="bearTitle">今晚小熊</h1>
             <span class="state-chip" id="drawStatus">今日未抽签</span>
           </div>
@@ -39,14 +39,29 @@
       <section class="screen" id="screen-calendar" aria-labelledby="calendarTitle">
         <header class="screen-head">
           <h1 id="calendarTitle">6月21日</h1>
+          <p class="date-line">今天的记录</p>
         </header>
 
-        <section class="coin-strip" id="calendarCoinStrip"></section>
+        <section class="soft-card day-panel today-task-panel">
+          <div class="day-panel-head">
+            <div>
+              <p class="date-line">记录对象</p>
+              <h2>家务日历</h2>
+            </div>
+            <div class="person-switch" id="calendarPersonSwitch"></div>
+          </div>
+          <div class="quick-actions" id="quickActions"></div>
+          <div class="day-log" id="dayLog"></div>
+        </section>
 
-        <div class="view-switch" id="calendarModeSwitch">
-          <button class="active" data-calendar-mode="calendar" type="button">日历</button>
-          <button data-calendar-mode="ledger" type="button">积分</button>
-        </div>
+        <button class="floating-add" data-add-rule type="button" aria-label="新增记录类型">+</button>
+      </section>
+
+      <section class="screen" id="screen-stats" aria-labelledby="statsTitle">
+        <header class="screen-head">
+          <h1 id="statsTitle">积分统计</h1>
+          <p class="date-line">本月记录</p>
+        </header>
 
         <section class="calendar-card" id="calendarCard">
           <div class="week-row">
@@ -61,19 +76,7 @@
           <div class="month-grid" id="monthGrid"></div>
         </section>
 
-        <section class="soft-card monthly-ledger hidden" id="monthlyLedger"></section>
-
-        <section class="soft-card day-panel">
-          <div class="day-panel-head">
-            <div>
-              <p class="date-line">6月<span id="selectedDayText">21</span>日</p>
-              <h2>家务日历</h2>
-            </div>
-            <div class="person-switch" id="calendarPersonSwitch"></div>
-          </div>
-          <div class="quick-actions" id="quickActions"></div>
-          <div class="day-log" id="dayLog"></div>
-        </section>
+        <section class="soft-card selected-day-ledger" id="selectedDayLedger"></section>
       </section>
 
       <section class="screen" id="screen-rules" aria-labelledby="rulesTitle">
@@ -92,6 +95,10 @@
         <button class="bottom-tab" data-view="calendar" type="button">
           <span class="nav-calendar-icon" aria-hidden="true"></span>
           <strong>日历</strong>
+        </button>
+        <button class="bottom-tab" data-view="stats" type="button">
+          <span>＋</span>
+          <strong>积分</strong>
         </button>
         <button class="bottom-tab" data-view="rules" type="button">
           <span>◎</span>
@@ -227,6 +234,15 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="celebration hidden" id="wishCelebration" aria-live="polite">
+      <div class="fireworks" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="celebration-card">
+        <strong>恭喜你抽到心愿小熊</strong>
+        <small id="celebrationText">今晚运气很好</small>
+      </div>
+    </div>
     <script src="app.js"></script>
   </body>
 </html>

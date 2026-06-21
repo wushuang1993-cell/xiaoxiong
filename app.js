@@ -1,4 +1,4 @@
-const TODAY_STORAGE_KEY = "bear-app-v21-2026-06-21";
+const TODAY_STORAGE_KEY = "bear-app-v23-2026-06-21";
 const ASSET_VERSION = "20260621-watercolor-2";
 const today = new Date();
 const TODAY_MONTH = today.getMonth() + 1;
@@ -9,7 +9,6 @@ const state = {
   selectedDay: 21,
   selectedPerson: "闪闪鱼",
   currentUser: "闪闪鱼",
-  calendarMode: "calendar",
   draw: null,
   drawUsed: false,
   drawRound: 0,
@@ -211,7 +210,7 @@ function drawInitial() {
   state.drawUsed = true;
   saveToday();
   renderAll();
-  showToast("今日小熊已抽签");
+  announceWishHit("今日小熊已抽签");
 }
 
 function paidRedraw(personName) {
@@ -229,7 +228,7 @@ function paidRedraw(personName) {
   addLog(21, { type: "重新抽签", person: person.name, detail: "小熊摇奖", delta: -3 });
   saveToday();
   renderAll();
-  showToast(`${person.name}花费 3 金币重新抽签`);
+  announceWishHit(`${person.name}已重新抽签`);
 }
 
 function applyApprovedExchange() {
@@ -270,6 +269,42 @@ function showToast(message) {
   toast.classList.add("show");
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => toast.classList.remove("show"), 1700);
+}
+
+function formatTodayDate() {
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  return `${today.getFullYear()}年${TODAY_MONTH}月${TODAY_DAY}日 | ${weekdays[today.getDay()]}`;
+}
+
+function wishWinners() {
+  if (!state.draw?.assignments) return [];
+  return state.people.filter((person) => {
+    const assigned = state.draw.assignments[person.name] || [];
+    return assigned.includes(person.wishBear);
+  });
+}
+
+function announceWishHit(fallbackMessage) {
+  const winners = wishWinners();
+  if (!winners.length) {
+    showToast(fallbackMessage);
+    return;
+  }
+  const names = winners.map((person) => `${person.name}抽到${person.wishBear}`).join("，");
+  showWishCelebration(names);
+}
+
+function showWishCelebration(message) {
+  const layer = $("#wishCelebration");
+  $("#celebrationText").textContent = message;
+  layer.classList.remove("hidden");
+  layer.classList.remove("play");
+  requestAnimationFrame(() => layer.classList.add("play"));
+  clearTimeout(showWishCelebration.timer);
+  showWishCelebration.timer = setTimeout(() => {
+    layer.classList.add("hidden");
+    layer.classList.remove("play");
+  }, 2600);
 }
 
 function miniBear(name) {
@@ -315,20 +350,6 @@ function renderScreens() {
   });
 }
 
-function renderCoins() {
-  const html = state.people
-    .map(
-      (person) => `
-        <div class="coin-pill">
-          <span>${person.name}</span>
-          <span>${person.coins} 金币</span>
-        </div>
-      `,
-    )
-    .join("");
-  $("#calendarCoinStrip").innerHTML = html;
-}
-
 function renderCurrentUser() {
   const current = personByName(state.currentUser);
   const pill = $("#currentUserPill");
@@ -340,6 +361,7 @@ function renderCurrentUser() {
 }
 
 function renderBearScreen() {
+  $("#todayDateLine").textContent = formatTodayDate();
   $("#drawStatus").textContent = state.drawUsed ? "今日已抽签" : "今日未抽签";
   renderCurrentUser();
   renderHeroBear();
@@ -422,22 +444,24 @@ function renderPending() {
 
 function renderCalendar() {
   $("#calendarTitle").textContent = `${TODAY_MONTH}月${TODAY_DAY}日`;
-  $("#selectedDayText").textContent = state.selectedDay;
-  $$("#calendarModeSwitch [data-calendar-mode]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.calendarMode === state.calendarMode);
-  });
-  $("#calendarCard").classList.toggle("hidden", state.calendarMode !== "calendar");
-  $("#monthlyLedger").classList.toggle("hidden", state.calendarMode !== "ledger");
   $("#calendarPersonSwitch").innerHTML = state.people
     .map(
       (person) => `
         <button class="${person.name === state.selectedPerson ? "active" : ""}" data-calendar-person="${person.name}" type="button">
-          ${person.name}
+          <strong>${person.name}</strong>
+          <small>${person.coins} 金币</small>
         </button>
       `,
     )
     .join("");
 
+  $("#quickActions").innerHTML = renderActionSections();
+
+  const selectedLogs = (state.logs[TODAY_DAY] || []).filter((log) => log.person === state.selectedPerson);
+  $("#dayLog").innerHTML = renderTodayWorkSummary(selectedLogs);
+}
+
+function renderStats() {
   const leading = 1;
   const days = [];
   for (let i = 0; i < leading; i += 1) days.push(`<div class="day-cell empty"></div>`);
@@ -455,42 +479,37 @@ function renderCalendar() {
     `);
   }
   $("#monthGrid").innerHTML = days.join("");
-  renderMonthlyLedger();
-
-  $("#quickActions").innerHTML = renderActionSections();
-
-  const selectedLogs = state.logs[state.selectedDay] || [];
-  $("#dayLog").innerHTML = selectedLogs.length
-    ? selectedLogs.map(logRow).join("")
-    : `<div class="log-row"><div class="log-main"><span class="log-dot"></span><div><strong>今天还没有记录</strong><div class="log-meta">点上面的按钮记录</div></div></div></div>`;
+  renderSelectedDayLedger();
 }
 
-function renderMonthlyLedger() {
-  const entries = Object.entries(state.logs)
-    .flatMap(([day, logs]) =>
-      logs
-        .filter((log) => log.delta !== 0)
-        .map((log) => ({ ...log, day: Number(day) })),
-    )
-    .sort((a, b) => b.day - a.day);
-  $("#monthlyLedger").innerHTML = `
-    ${state.people.map((person) => personLedger(person, entries)).join("")}
+function renderSelectedDayLedger() {
+  const selectedLogs = state.logs[state.selectedDay] || [];
+  const total = selectedLogs.reduce((sum, log) => sum + Number(log.delta || 0), 0);
+  $("#selectedDayLedger").innerHTML = `
+    <div class="history-head">
+      <div>
+        <p class="date-line">${TODAY_MONTH}月${state.selectedDay}日</p>
+        <h2>当天积分</h2>
+      </div>
+      <span>${total > 0 ? "+" : ""}${total}</span>
+    </div>
+    ${state.people.map((person) => dayPersonHistory(person, selectedLogs)).join("")}
   `;
 }
 
 function renderActionSections() {
   const groups = [
-    ["饮品", "drink"],
-    ["添加家务", "base"],
+    ["家务", "base"],
     ["增值家务", "bonus"],
     ["扣分", "penalty"],
+    ["饮品", "drink"],
   ];
   return groups
     .map(([title, group]) => {
       const items = state.rules[group] || [];
       if (!items.length) return "";
       return `
-        <section class="action-section">
+        <section class="action-section ${group}">
           <h3>${title}</h3>
           <div class="action-grid">
             ${items
@@ -510,38 +529,61 @@ function renderActionSections() {
     .join("");
 }
 
-function personLedger(person, entries) {
-  const personEntries = entries.filter((log) => log.person === person.name);
-  const earned = personEntries.filter((log) => log.delta > 0).reduce((sum, log) => sum + log.delta, 0);
-  const deducted = personEntries.filter((log) => log.delta < 0).reduce((sum, log) => sum + Math.abs(log.delta), 0);
-  const deductedText = deducted ? `-${deducted}` : "0";
+function dayPersonHistory(person, logs) {
+  const personLogs = logs.filter((log) => log.person === person.name);
+  const rows = personLogs.map((log) => ({ ...log, day: state.selectedDay }));
+  const net = rows.reduce((sum, log) => sum + Number(log.delta || 0), 0);
   return `
-    <section class="person-ledger">
+    <section class="person-history">
       <div class="person-ledger-head">
         ${personAvatar(person)}
         <div>
           <strong>${person.name}</strong>
-          <small>本月金币记录</small>
-        </div>
-      </div>
-      <div class="monthly-totals">
-        <div>
-          <small>积分</small>
-          <strong>+${earned}</strong>
-        </div>
-        <div>
-          <small>扣分</small>
-          <strong>${deductedText}</strong>
+          <small>${rows.length ? `${net > 0 ? "+" : ""}${net}` : "0"}</small>
         </div>
       </div>
       <div class="ledger-list">
         ${
-          personEntries.length
-            ? personEntries.map(ledgerRow).join("")
-            : `<div class="ledger-empty">本月还没有积分变化</div>`
+          rows.length
+            ? rows.map(scoreRow).join("")
+            : `<div class="ledger-empty">这一天没有积分变化</div>`
         }
       </div>
     </section>
+  `;
+}
+
+function renderTodayWorkSummary(logs) {
+  const net = logs.reduce((sum, log) => sum + Number(log.delta || 0), 0);
+  const workLogs = logs.filter((log) => log.type !== "饮品");
+  const summary = `
+    <section class="today-summary">
+      <div>
+        <small>今日完成</small>
+        <strong>${workLogs.length} 项</strong>
+      </div>
+      <div>
+        <small>积分变化</small>
+        <strong class="${net < 0 ? "negative" : ""}">${net > 0 ? "+" : ""}${net}</strong>
+      </div>
+    </section>
+  `;
+  const rows = logs.length
+    ? logs.map(logRow).join("")
+    : `<div class="log-row"><div class="log-main"><span class="log-dot"></span><div><strong>今天还没有记录</strong><div class="log-meta">点击上面的类目记录</div></div></div></div>`;
+  return `${summary}<div class="today-work-list">${rows}</div>`;
+}
+
+function scoreRow(log) {
+  const positive = log.delta > 0;
+  return `
+    <div class="score-row ${positive ? "plus" : "minus"}">
+      <div>
+        <strong>${log.detail || log.type}</strong>
+        <small>${log.type}</small>
+      </div>
+      <span>${positive ? "+" : ""}${log.delta}</span>
+    </div>
   `;
 }
 
@@ -562,6 +604,7 @@ function ledgerRow(log) {
 function tagClass(type) {
   if (type === "饮品") return "drink";
   if (type === "扣分") return "penalty";
+  if (type === "增值家务") return "bonus";
   return "";
 }
 
@@ -958,9 +1001,9 @@ function closeSheet(id) {
 
 function renderAll() {
   renderScreens();
-  renderCoins();
   renderBearScreen();
   renderCalendar();
+  renderStats();
   renderRules();
   renderWishEditor();
   renderIdentitySettings();
@@ -1081,13 +1124,6 @@ function bindEvents() {
       return;
     }
 
-    const calendarMode = event.target.closest("[data-calendar-mode]");
-    if (calendarMode) {
-      state.calendarMode = calendarMode.dataset.calendarMode;
-      renderAll();
-      return;
-    }
-
     const addRule = event.target.closest("[data-add-rule]");
     if (addRule) {
       openRuleEditor();
@@ -1199,7 +1235,7 @@ function bindEvents() {
     const action = event.target.closest("[data-log-type]");
     if (action) {
       const delta = Number(action.dataset.logDelta);
-      addLog(state.selectedDay, {
+      addLog(TODAY_DAY, {
         type: action.dataset.logType,
         person: state.selectedPerson,
         detail: action.dataset.logDetail,
