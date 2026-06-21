@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f0e8" />
+    <title>小熊 App</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="phone-app">
+      <section class="screen active" id="screen-bears" aria-labelledby="bearTitle">
+        <section class="hero-card">
+          <div class="top-row">
+            <button class="login-pill" id="currentUserPill" type="button" aria-label="当前身份"></button>
+            <button class="round-button" id="wishToggle" type="button" aria-label="心愿小熊">♡</button>
+          </div>
+          <div class="hero-copy">
+            <p class="date-line">周日，6月21日，2026</p>
+            <h1 id="bearTitle">今晚小熊</h1>
+            <span class="state-chip" id="drawStatus">今日未抽签</span>
+          </div>
+          <img class="hero-bear" id="heroBear" src="" alt="" />
+        </section>
+
+        <section class="soft-card bear-stage">
+          <div class="draw-columns" id="drawColumns"></div>
+          <div class="draw-action" id="drawAction"></div>
+        </section>
+
+        <section class="soft-card pending-card hidden" id="pendingCard"></section>
+
+        <button class="bear-archive-fab" id="openBearArchive" type="button" aria-label="小熊档案">
+          <span class="bear-line-icon" aria-hidden="true"></span>
+        </button>
+      </section>
+
+      <section class="screen" id="screen-calendar" aria-labelledby="calendarTitle">
+        <header class="screen-head">
+          <h1 id="calendarTitle">6月21日</h1>
+        </header>
+
+        <section class="coin-strip" id="calendarCoinStrip"></section>
+
+        <div class="view-switch" id="calendarModeSwitch">
+          <button class="active" data-calendar-mode="calendar" type="button">日历</button>
+          <button data-calendar-mode="ledger" type="button">积分</button>
+        </div>
+
+        <section class="calendar-card" id="calendarCard">
+          <div class="week-row">
+            <span>周日</span>
+            <span>周一</span>
+            <span>周二</span>
+            <span>周三</span>
+            <span>周四</span>
+            <span>周五</span>
+            <span>周六</span>
+          </div>
+          <div class="month-grid" id="monthGrid"></div>
+        </section>
+
+        <section class="soft-card monthly-ledger hidden" id="monthlyLedger"></section>
+
+        <section class="soft-card day-panel">
+          <div class="day-panel-head">
+            <div>
+              <p class="date-line">6月<span id="selectedDayText">21</span>日</p>
+              <h2>家务日历</h2>
+            </div>
+            <div class="person-switch" id="calendarPersonSwitch"></div>
+          </div>
+          <div class="quick-actions" id="quickActions"></div>
+          <div class="day-log" id="dayLog"></div>
+        </section>
+      </section>
+
+      <section class="screen" id="screen-rules" aria-labelledby="rulesTitle">
+        <header class="screen-head compact-head">
+          <h1 id="rulesTitle">设置</h1>
+        </header>
+
+        <section class="soft-card rules-list" id="rulesList"></section>
+      </section>
+
+      <nav class="bottom-tabs" aria-label="底部导航">
+        <button class="bottom-tab active" data-view="bears" type="button">
+          <span>☾</span>
+          <strong>小熊</strong>
+        </button>
+        <button class="bottom-tab" data-view="calendar" type="button">
+          <span class="nav-calendar-icon" aria-hidden="true"></span>
+          <strong>日历</strong>
+        </button>
+        <button class="bottom-tab" data-view="rules" type="button">
+          <span>◎</span>
+          <strong>规则</strong>
+        </button>
+      </nav>
+    </main>
+
+    <div class="sheet-backdrop hidden" id="exchangeSheet" role="dialog" aria-modal="true" aria-labelledby="exchangeTitle">
+      <section class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <h2 id="exchangeTitle">选择要兑换的小熊</h2>
+        <p class="sheet-note" id="exchangeNote"></p>
+        <div class="exchange-options" id="exchangeOptions"></div>
+        <button class="primary-button" id="confirmExchange" type="button">确认并发起申请</button>
+        <button class="plain-button" data-close-sheet="exchangeSheet" type="button">取消</button>
+      </section>
+    </div>
+
+    <div class="sheet-backdrop hidden" id="wishSheet" role="dialog" aria-modal="true" aria-labelledby="wishSheetTitle">
+      <section class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <h2 id="wishSheetTitle">心愿小熊</h2>
+        <div class="wish-editor" id="wishEditor"></div>
+        <button class="plain-button" data-close-sheet="wishSheet" type="button">关闭</button>
+      </section>
+    </div>
+
+    <div class="sheet-backdrop hidden" id="identitySheet" role="dialog" aria-modal="true" aria-labelledby="identitySheetTitle">
+      <section class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <h2 id="identitySheetTitle">身份设置</h2>
+        <div class="identity-list" id="identityList"></div>
+        <button class="plain-button" data-close-sheet="identitySheet" type="button">关闭</button>
+      </section>
+    </div>
+
+    <div class="sheet-backdrop hidden" id="bearArchiveSheet" role="dialog" aria-modal="true" aria-labelledby="bearArchiveTitle">
+      <section class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title-row">
+          <div>
+            <h2 id="bearArchiveTitle">小熊目录</h2>
+            <p class="sheet-note">最多开启 6 只。</p>
+          </div>
+          <button class="add-button" data-add-bear type="button">+</button>
+        </div>
+        <div class="archive-list" id="bearArchiveList"></div>
+        <button class="plain-button" data-close-sheet="bearArchiveSheet" type="button">关闭</button>
+      </section>
+    </div>
+
+    <div class="sheet-backdrop hidden" id="ruleSheet" role="dialog" aria-modal="true" aria-labelledby="ruleSheetTitle">
+      <section class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <h2 id="ruleSheetTitle">金币规则</h2>
+        <div class="editor-form">
+          <label>
+            <span>规则名称</span>
+            <input id="ruleNameInput" type="text" />
+          </label>
+          <label>
+            <span>规则类型</span>
+            <select id="ruleGroupInput">
+              <option value="base">基础家务</option>
+              <option value="bonus">增值家务</option>
+              <option value="penalty">扣分</option>
+              <option value="drink">饮品</option>
+            </select>
+          </label>
+          <label>
+            <span>加减金币</span>
+            <input id="ruleAmountInput" type="number" min="-99" max="99" />
+          </label>
+        </div>
+        <div class="sheet-actions">
+          <button class="danger-button hidden" id="deleteRule" type="button">删除</button>
+          <button class="primary-button" id="saveRule" type="button">保存</button>
+        </div>
+        <button class="plain-button" data-close-sheet="ruleSheet" type="button">取消</button>
+      </section>
+    </div>
+
+    <div class="sheet-backdrop hidden" id="bearSheet" role="dialog" aria-modal="true" aria-labelledby="bearSheetTitle">
+      <section class="bottom-sheet bear-editor-sheet">
+        <div class="sheet-handle"></div>
+        <h2 id="bearSheetTitle">小熊档案</h2>
+        <div class="editor-form">
+          <label>
+            <span>小熊名字</span>
+            <input id="bearNameInput" type="text" />
+          </label>
+          <label class="image-picker">
+            <span>头像</span>
+            <input id="bearImageInput" type="file" accept="image/*" />
+            <strong>选择图片</strong>
+          </label>
+        </div>
+        <div class="sheet-actions bear-save-actions">
+          <button class="plain-button" data-close-sheet="bearSheet" type="button">取消</button>
+          <button class="primary-button" id="saveBear" type="button">保存</button>
+        </div>
+        <button class="danger-button hidden" id="deleteBear" type="button">删除</button>
+      </section>
+    </div>
+
+    <div class="sheet-backdrop hidden" id="approvalSheet" role="dialog" aria-modal="true" aria-labelledby="approvalTitle">
+      <section class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <h2 id="approvalTitle">同意兑换</h2>
+        <p class="sheet-note" id="approvalNote"></p>
+        <div class="exchange-options" id="approvalOptions"></div>
+        <button class="primary-button" id="confirmApproval" type="button">确认同意</button>
+        <button class="plain-button" data-close-sheet="approvalSheet" type="button">取消</button>
+      </section>
+    </div>
+
+    <div class="sheet-backdrop hidden" id="memberSheet" role="dialog" aria-modal="true" aria-labelledby="memberSheetTitle">
+      <section class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <h2 id="memberSheetTitle">成员头像</h2>
+        <div class="editor-form">
+          <div class="member-preview" id="memberPreview"></div>
+          <label class="image-picker">
+            <span>头像</span>
+            <input id="memberImageInput" type="file" accept="image/*" />
+            <strong>选择图片</strong>
+          </label>
+        </div>
+        <button class="primary-button" id="saveMember" type="button">保存</button>
+        <button class="plain-button" data-close-sheet="memberSheet" type="button">取消</button>
+      </section>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>

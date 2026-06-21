@@ -1,0 +1,9 @@
+{
+  "name": "小熊 App",
+  "short_name": "小熊",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fffdf7",
+  "theme_color": "#f7f4ec",
+  "description": "记录小熊分配、金币奖惩、家务和咖啡奶茶时间的家庭原型。"
+}
