@@ -6,7 +6,8 @@
 
 - 前端：静态 HTML/CSS/JavaScript，已补充 Vite/Vercel 配置。
 - 数据：当前仍使用 mock 数据和浏览器本地存储。
-- 下一步：接入 Supabase Auth、Postgres、Storage，把两个人的登录和真实数据存储上线。
+- 登录：已经预留 Supabase Auth 入口。未配置环境变量时显示本地原型模式；配置后可以用邮箱 magic link 登录。
+- 下一步：把成员、小熊目录、金币规则、家务记录、抽签结果逐步从 mock 数据迁移到 Supabase。
 
 ## 本地运行
 
@@ -50,6 +51,14 @@ VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 ```
 
+配置完成后重新启动本地服务：
+
+```bash
+pnpm run dev
+```
+
+点击 App 左上角身份胶囊，可以看到登录状态。闪闪鱼和杰尼龟后续应分别使用自己的邮箱登录；登录后仍能切换“当前操作身份”，方便在同一台手机上演示双方视角。
+
 ## 部署
 
 推荐使用 Vercel：
@@ -73,9 +82,8 @@ supabase/schema.sql
 
 ## 下一步开发顺序
 
-1. 接入 Supabase Auth，让闪闪鱼和杰尼龟分别登录。
-2. 建立家庭空间和邀请码，让两个账号加入同一个家庭。
-3. 把成员、小熊目录、金币规则从 mock 数据迁移到 Supabase。
-4. 把家务日历和积分记录写入 `daily_logs` 与 `coin_ledger`。
-5. 把每日抽签移动到服务端函数，保证每天只能抽一次。
-6. 把兑换申请写入 `exchange_requests`，由对方登录后同意。
+1. 建立家庭空间和邀请码，让两个账号加入同一个家庭。
+2. 把成员、小熊目录、金币规则从 mock 数据迁移到 Supabase。
+3. 把家务日历和积分记录写入 `daily_logs` 与 `coin_ledger`。
+4. 把每日抽签移动到服务端函数，保证每天只能抽一次。
+5. 把兑换申请写入 `exchange_requests`，由对方登录后同意。

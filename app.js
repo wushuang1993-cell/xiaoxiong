@@ -3,12 +3,20 @@ const ASSET_VERSION = "20260621-watercolor-2";
 const today = new Date();
 const TODAY_MONTH = today.getMonth() + 1;
 const TODAY_DAY = today.getDate();
+let authApi = null;
 
 const state = {
   view: "bears",
   selectedDay: 21,
   selectedPerson: "闪闪鱼",
   currentUser: "闪闪鱼",
+  auth: {
+    ready: false,
+    configured: false,
+    user: null,
+    email: "",
+    message: "",
+  },
   draw: null,
   drawUsed: false,
   drawRound: 0,
@@ -357,6 +365,7 @@ function renderCurrentUser() {
   pill.innerHTML = `
     ${personAvatar(current)}
     <span>${current.name}</span>
+    <small>${state.auth.user ? "已登录" : "本地"}</small>
   `;
 }
 
@@ -724,7 +733,13 @@ function renderWishEditor() {
 }
 
 function renderIdentitySettings() {
-  $("#identityList").innerHTML = state.people
+  $("#identityList").innerHTML = `
+    ${renderAuthPanel()}
+    <div class="identity-section-title">
+      <strong>当前操作身份</strong>
+      <small>切换后，新增记录会记在对应的人下面。</small>
+    </div>
+    ${state.people
     .map(
       (person) => `
         <div class="identity-row">
@@ -736,7 +751,53 @@ function renderIdentitySettings() {
         </div>
       `,
     )
-    .join("");
+    .join("")}
+  `;
+}
+
+function renderAuthPanel() {
+  if (!state.auth.ready) {
+    return `
+      <section class="auth-panel">
+        <strong>登录状态</strong>
+        <small>正在检查后端配置...</small>
+      </section>
+    `;
+  }
+
+  if (!state.auth.configured) {
+    return `
+      <section class="auth-panel local">
+        <div>
+          <strong>本地原型模式</strong>
+          <small>${state.auth.message || "配置 Supabase 环境变量后，可以用邮箱登录。"}</small>
+        </div>
+      </section>
+    `;
+  }
+
+  if (state.auth.user) {
+    return `
+      <section class="auth-panel signed-in">
+        <div>
+          <strong>已登录</strong>
+          <small>${state.auth.email}</small>
+        </div>
+        <button class="small-action" id="authSignOut" type="button">退出</button>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="auth-panel">
+      <div>
+        <strong>邮箱登录</strong>
+        <small>闪闪鱼和杰尼龟分别使用自己的邮箱登录。</small>
+      </div>
+      <input id="loginEmailInput" type="email" placeholder="输入邮箱" autocomplete="email" />
+      <button class="primary-button compact" id="sendLoginLink" type="button">发送登录链接</button>
+    </section>
+  `;
 }
 
 function renderBearArchive() {
@@ -1124,6 +1185,37 @@ function bindEvents() {
       return;
     }
 
+    const sendLogin = event.target.closest("#sendLoginLink");
+    if (sendLogin) {
+      const email = $("#loginEmailInput")?.value.trim();
+      if (!email) {
+        showToast("先输入邮箱");
+        return;
+      }
+      if (!authApi?.sendLoginLink) {
+        showToast("登录模块还没准备好");
+        return;
+      }
+      try {
+        await authApi.sendLoginLink(email);
+        showToast("登录链接已发送");
+      } catch (error) {
+        showToast(error.message || "发送失败");
+      }
+      return;
+    }
+
+    const authSignOut = event.target.closest("#authSignOut");
+    if (authSignOut) {
+      try {
+        await authApi?.signOut?.();
+        showToast("已退出登录");
+      } catch (error) {
+        showToast(error.message || "退出失败");
+      }
+      return;
+    }
+
     const addRule = event.target.closest("[data-add-rule]");
     if (addRule) {
       openRuleEditor();
@@ -1270,6 +1362,27 @@ function bindEvents() {
   });
 }
 
+async function bootAuth() {
+  try {
+    const auth = await import("./src/auth.js");
+    authApi = auth;
+    await auth.watchAuth((snapshot) => {
+      state.auth = { ready: true, ...snapshot };
+      renderAll();
+    });
+  } catch (error) {
+    state.auth = {
+      ready: true,
+      configured: false,
+      user: null,
+      email: "",
+      message: "请通过 Vite 本地地址或部署地址使用登录功能。",
+    };
+    renderAll();
+  }
+}
+
 loadToday();
 bindEvents();
 renderAll();
+bootAuth();

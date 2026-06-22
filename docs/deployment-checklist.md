@@ -82,10 +82,16 @@ VITE_SUPABASE_ANON_KEY=<anon public key>
 
 ## 第六步：后续真实登录和数据接入
 
-这一步需要继续开发代码。推荐顺序：
+登录入口已经在 App 左上角身份胶囊里预留：
 
-1. 登录页：邮箱登录或 magic link。
-2. 家庭初始化：闪闪鱼创建家庭，杰尼龟通过邀请码加入。
-3. 读取数据库：替换当前 mock `state.people`、`state.bears`、`state.rules`。
-4. 写入数据库：日历记录、金币流水、心愿小熊、小熊目录。
-5. 抽签服务端化：用 Supabase Edge Function 保证每天只能抽一次。
+1. 没有配置 Supabase 环境变量时，显示“本地原型模式”。
+2. 配置 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_ANON_KEY` 后，显示邮箱登录。
+3. 闪闪鱼和杰尼龟分别用自己的邮箱登录。
+4. 登录后，App 仍然显示共同家庭数据；每条记录后续会写入当前登录账号的 `user_id`。
+
+后续还需要继续开发的数据接入顺序：
+
+1. 家庭初始化：闪闪鱼创建家庭，杰尼龟通过邀请码加入。
+2. 读取数据库：替换当前 mock `state.people`、`state.bears`、`state.rules`。
+3. 写入数据库：日历记录、金币流水、心愿小熊、小熊目录。
+4. 抽签服务端化：用 Supabase Edge Function 保证每天只能抽一次。
