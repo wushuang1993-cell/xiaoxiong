@@ -792,7 +792,7 @@ function renderAuthPanel() {
     <section class="auth-panel">
       <div>
         <strong>邮箱登录</strong>
-        <small>闪闪鱼和杰尼龟分别使用自己的邮箱登录。</small>
+        <small>${state.auth.message || "闪闪鱼和杰尼龟分别使用自己的邮箱登录。"}</small>
       </div>
       <input id="loginEmailInput" type="email" placeholder="输入邮箱" autocomplete="email" />
       <button class="primary-button compact" id="sendLoginLink" type="button">发送登录链接</button>
