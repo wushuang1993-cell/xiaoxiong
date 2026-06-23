@@ -601,6 +601,88 @@ h3 {
   box-shadow: var(--shadow);
 }
 
+.action-audit {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 13px;
+}
+
+.audit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.audit-head span {
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--tile);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.audit-person {
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border-radius: 18px;
+  background: var(--tile);
+}
+
+.audit-person-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.audit-person-head strong,
+.audit-row strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 860;
+}
+
+.audit-person-head small,
+.audit-row small,
+.audit-empty {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 680;
+}
+
+.audit-rows {
+  display: grid;
+  gap: 5px;
+}
+
+.audit-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 7px 8px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.audit-row > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.audit-empty {
+  padding: 7px 8px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
 .bear-line-icon {
   position: relative;
   display: block;

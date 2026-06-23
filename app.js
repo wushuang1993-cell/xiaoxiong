@@ -22,6 +22,7 @@ const state = {
   drawRound: 0,
   pendingExchange: null,
   pendingRedraw: null,
+  actions: [],
   exchangeDraft: null,
   approvalOffer: null,
   editingRule: null,
@@ -99,6 +100,7 @@ function saveToday() {
       drawRound: state.drawRound,
       pendingExchange: state.pendingExchange,
       pendingRedraw: state.pendingRedraw,
+      actions: state.actions,
       currentUser: state.currentUser,
       people: state.people.map(({ name, mark, wishBear, coins, avatar, image }) => ({
         name,
@@ -124,6 +126,7 @@ function loadToday() {
     state.drawRound = saved.drawRound || 0;
     state.pendingExchange = saved.pendingExchange || null;
     state.pendingRedraw = saved.pendingRedraw || null;
+    state.actions = Array.isArray(saved.actions) ? saved.actions : [];
     state.currentUser = saved.currentUser || state.currentUser;
     state.logs = saved.logs || state.logs;
     if (Array.isArray(saved.bears) && saved.bears.length >= 2) {
@@ -219,6 +222,7 @@ function drawInitial() {
   state.drawRound = 1;
   state.draw = runDraw("bear-2026-06-21-free");
   state.drawUsed = true;
+  recordAction(state.currentUser, "今日已抽签", `校验码 ${state.draw.checksum}`);
   saveToday();
   renderAll();
   announceWishHit("今日小熊已抽签");
@@ -243,6 +247,7 @@ function requestRedraw(personName) {
     return;
   }
   state.pendingRedraw = { applicant: person.name };
+  recordAction(person.name, "申请重抽", "等待对方同意");
   saveToday();
   renderAll();
   showToast("重抽申请已发出");
@@ -264,6 +269,7 @@ function applyApprovedRedraw() {
   state.drawRound += 1;
   state.draw = runDraw(`bear-${today.toISOString().slice(0, 10)}-paid-${state.drawRound}`);
   addLog(TODAY_DAY, { type: "重新抽签", person: applicant.name, detail: `${approver.name}已同意`, delta: -3 });
+  recordAction(approver.name, "同意重抽", `${applicant.name}扣 3 金币`);
   state.pendingRedraw = null;
   saveToday();
   renderAll();
@@ -283,6 +289,7 @@ function applyApprovedExchange() {
   const outgoing = mine[offerIndex];
   mine[offerIndex] = pending.targetBear;
   theirs[targetIndex] = outgoing;
+  recordAction(approver.name, "同意兑换", `${applicant.name}获得${pending.targetBear}`);
   addLog(21, {
     type: "兑换小熊",
     person: applicant.name,
@@ -300,6 +307,18 @@ function addLog(day, log) {
   state.logs[day].push(log);
   const person = personByName(log.person);
   if (person && log.delta) person.coins += log.delta;
+}
+
+function recordAction(person, action, detail = "") {
+  state.actions.unshift({
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    day: TODAY_DAY,
+    time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
+    person,
+    action,
+    detail,
+  });
+  state.actions = state.actions.slice(0, 80);
 }
 
 function showToast(message) {
@@ -411,6 +430,7 @@ function renderBearScreen() {
     ? ""
     : `<button class="primary-button" id="startDraw" type="button">开始抽签</button>`;
   renderPending();
+  renderActionAudit();
 }
 
 function renderHeroBear() {
@@ -442,7 +462,7 @@ function drawPersonCard(person) {
       ${
         assigned.length
           ? `<div class="person-actions">
-              <button class="cost-button redraw ${tone}" data-redraw-person="${person.name}" type="button">重抽</button>
+              <button class="cost-button redraw ${tone}" data-redraw-person="${person.name}" type="button">申请重抽</button>
               <button class="cost-button exchange ${tone}" data-exchange-person="${person.name}" type="button">兑换</button>
             </div>`
           : ""
@@ -511,6 +531,58 @@ function renderPendingExchange(card) {
         ? `<button class="pending-approve" id="approveExchange" type="button">同意</button>`
         : `<button class="pending-approve muted" disabled type="button">等待</button>`
     }
+  `;
+}
+
+function renderActionAudit() {
+  const audit = $("#actionAudit");
+  if (!audit) return;
+  const todayActions = state.actions.filter((item) => item.day === TODAY_DAY);
+  const grouped = state.people
+    .map((person) => {
+      const rows = todayActions.filter((item) => item.person === person.name);
+      return `
+        <section class="audit-person">
+          <div class="audit-person-head">
+            ${personAvatar(person)}
+            <div>
+              <strong>${person.name}</strong>
+              <small>${rows.length} 个操作</small>
+            </div>
+          </div>
+          <div class="audit-rows">
+            ${
+              rows.length
+                ? rows.map(actionRow).join("")
+                : `<div class="audit-empty">今天还没有操作</div>`
+            }
+          </div>
+        </section>
+      `;
+    })
+    .join("");
+
+  audit.innerHTML = `
+    <div class="audit-head">
+      <div>
+        <p class="date-line">防作弊记录</p>
+        <h2>今日操作</h2>
+      </div>
+      <span>${todayActions.length}</span>
+    </div>
+    ${grouped}
+  `;
+}
+
+function actionRow(item) {
+  return `
+    <div class="audit-row">
+      <span>${item.time}</span>
+      <div>
+        <strong>${item.action}</strong>
+        ${item.detail ? `<small>${item.detail}</small>` : ""}
+      </div>
+    </div>
   `;
 }
 
@@ -1206,6 +1278,7 @@ function bindEvents() {
         return;
       }
       state.pendingExchange = { ...state.exchangeDraft };
+      recordAction(applicant.name, "申请兑换", `想要${state.exchangeDraft.targetBear}`);
       state.exchangeDraft = null;
       closeSheet("exchangeSheet");
       saveToday();
@@ -1382,6 +1455,7 @@ function bindEvents() {
       const random = seededRandom(Date.now() + hashString(person.name));
       const nextBear = state.bears[Math.floor(random() * state.bears.length)].name;
       person.wishBear = nextBear;
+      recordAction(person.name, "随机心愿小熊", nextBear);
       saveToday();
       renderAll();
       showToast(`${person.name}随机选到${nextBear}`);
@@ -1427,6 +1501,7 @@ function bindEvents() {
       }
       person.coins -= 1;
       person.wishBear = wish.dataset.wishBear;
+      recordAction(person.name, "修改心愿小熊", wish.dataset.wishBear);
       addLog(21, {
         type: "心愿小熊",
         person: person.name,
