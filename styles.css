@@ -552,6 +552,11 @@ h3 {
   object-fit: contain;
 }
 
+.person-pending-icon .avatar {
+  width: 34px;
+  height: 34px;
+}
+
 .pending-copy {
   min-width: 0;
 }

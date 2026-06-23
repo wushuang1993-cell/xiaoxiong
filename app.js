@@ -21,6 +21,7 @@ const state = {
   drawUsed: false,
   drawRound: 0,
   pendingExchange: null,
+  pendingRedraw: null,
   exchangeDraft: null,
   approvalOffer: null,
   editingRule: null,
@@ -97,6 +98,7 @@ function saveToday() {
       drawUsed: state.drawUsed,
       drawRound: state.drawRound,
       pendingExchange: state.pendingExchange,
+      pendingRedraw: state.pendingRedraw,
       currentUser: state.currentUser,
       people: state.people.map(({ name, mark, wishBear, coins, avatar, image }) => ({
         name,
@@ -121,6 +123,7 @@ function loadToday() {
     state.drawUsed = Boolean(saved.drawUsed && saved.draw);
     state.drawRound = saved.drawRound || 0;
     state.pendingExchange = saved.pendingExchange || null;
+    state.pendingRedraw = saved.pendingRedraw || null;
     state.currentUser = saved.currentUser || state.currentUser;
     state.logs = saved.logs || state.logs;
     if (Array.isArray(saved.bears) && saved.bears.length >= 2) {
@@ -221,22 +224,50 @@ function drawInitial() {
   announceWishHit("今日小熊已抽签");
 }
 
-function paidRedraw(personName) {
+function requestRedraw(personName) {
   const person = personByName(personName);
   if (!state.drawUsed) {
     showToast("先完成今天的抽签");
+    return;
+  }
+  if (state.currentUser !== person.name) {
+    showToast(`请切换为${person.name}后申请重抽`);
+    return;
+  }
+  if (state.pendingExchange || state.pendingRedraw) {
+    showToast("还有申请等待处理");
     return;
   }
   if (person.coins < 3) {
     showToast(`${person.name}金币不够`);
     return;
   }
-  state.drawRound += 1;
-  state.draw = runDraw(`bear-2026-06-21-paid-${state.drawRound}`);
-  addLog(21, { type: "重新抽签", person: person.name, detail: "小熊摇奖", delta: -3 });
+  state.pendingRedraw = { applicant: person.name };
   saveToday();
   renderAll();
-  announceWishHit(`${person.name}已重新抽签`);
+  showToast("重抽申请已发出");
+}
+
+function applyApprovedRedraw() {
+  const pending = state.pendingRedraw;
+  if (!pending || !state.drawUsed) return;
+  const applicant = personByName(pending.applicant);
+  const approver = otherPerson(pending.applicant);
+  if (!applicant || !approver) return;
+  if (applicant.coins < 3) {
+    state.pendingRedraw = null;
+    saveToday();
+    renderAll();
+    showToast(`${applicant.name}金币不够`);
+    return;
+  }
+  state.drawRound += 1;
+  state.draw = runDraw(`bear-${today.toISOString().slice(0, 10)}-paid-${state.drawRound}`);
+  addLog(TODAY_DAY, { type: "重新抽签", person: applicant.name, detail: `${approver.name}已同意`, delta: -3 });
+  state.pendingRedraw = null;
+  saveToday();
+  renderAll();
+  announceWishHit(`${approver.name}已同意重抽`);
 }
 
 function applyApprovedExchange() {
@@ -422,11 +453,43 @@ function drawPersonCard(person) {
 
 function renderPending() {
   const card = $("#pendingCard");
-  if (!state.pendingExchange) {
+  if (!state.pendingExchange && !state.pendingRedraw) {
     card.classList.add("hidden");
     card.innerHTML = "";
     return;
   }
+  if (state.pendingRedraw) {
+    renderPendingRedraw(card);
+    return;
+  }
+  renderPendingExchange(card);
+}
+
+function renderPendingRedraw(card) {
+  const pending = state.pendingRedraw;
+  const approver = otherPerson(pending.applicant);
+  const applicant = personByName(pending.applicant);
+  const canApprove = state.currentUser === approver.name;
+  card.classList.remove("hidden");
+  card.innerHTML = `
+    <div class="pending-main">
+      <span class="pending-icon person-pending-icon">
+        ${personAvatar(applicant)}
+      </span>
+      <div class="pending-copy">
+        <strong>申请重新抽签</strong>
+        <small>${applicant.name}发起 · 需要${approver.name}同意后扣 3 金币</small>
+      </div>
+    </div>
+    ${
+      canApprove
+        ? `<button class="pending-approve" id="approveRedraw" type="button">同意</button>`
+        : `<button class="pending-approve muted" disabled type="button">等待</button>`
+    }
+  `;
+}
+
+function renderPendingExchange(card) {
   const pending = state.pendingExchange;
   const approver = otherPerson(pending.applicant);
   const applicant = personByName(pending.applicant);
@@ -1113,7 +1176,7 @@ function bindEvents() {
 
     const redraw = event.target.closest("[data-redraw-person]");
     if (redraw) {
-      paidRedraw(redraw.dataset.redrawPerson);
+      requestRedraw(redraw.dataset.redrawPerson);
       return;
     }
 
@@ -1134,6 +1197,10 @@ function bindEvents() {
     const confirmExchange = event.target.closest("#confirmExchange");
     if (confirmExchange) {
       const applicant = personByName(state.exchangeDraft.applicant);
+      if (state.pendingExchange || state.pendingRedraw) {
+        showToast("还有申请等待处理");
+        return;
+      }
       if (applicant.coins < 2) {
         showToast(`${applicant.name}金币不够`);
         return;
@@ -1144,6 +1211,17 @@ function bindEvents() {
       saveToday();
       renderAll();
       showToast("兑换申请已发出");
+      return;
+    }
+
+    const approveRedraw = event.target.closest("#approveRedraw");
+    if (approveRedraw) {
+      const approver = otherPerson(state.pendingRedraw?.applicant);
+      if (!approver || state.currentUser !== approver.name) {
+        showToast(`请切换为${approver?.name || "对方"}后同意`);
+        return;
+      }
+      applyApprovedRedraw();
       return;
     }
 
