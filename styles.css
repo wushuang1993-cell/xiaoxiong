@@ -603,9 +603,9 @@ h3 {
 
 .action-audit {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   margin-top: 14px;
-  padding: 13px;
+  padding: 12px 13px;
 }
 
 .audit-head {
@@ -627,60 +627,39 @@ h3 {
   font-weight: 900;
 }
 
-.audit-person {
-  display: grid;
-  gap: 7px;
-  padding: 9px;
-  border-radius: 18px;
-  background: var(--tile);
-}
-
-.audit-person-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.audit-person-head strong,
 .audit-row strong {
-  display: block;
-  font-size: 12px;
   font-weight: 860;
 }
 
-.audit-person-head small,
-.audit-row small,
 .audit-empty {
   color: var(--muted);
   font-size: 10px;
   font-weight: 680;
 }
 
-.audit-rows {
+.audit-list {
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 
 .audit-row {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 8px;
-  align-items: start;
-  padding: 7px 8px;
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.68);
+  margin: 0;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 680;
+  line-height: 1.55;
 }
 
-.audit-row > span {
+.audit-row span {
+  display: inline-block;
+  min-width: 38px;
   color: var(--muted);
   font-size: 10px;
   font-weight: 760;
 }
 
 .audit-empty {
-  padding: 7px 8px;
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.5);
+  padding: 2px 0;
 }
 
 .bear-line-icon {

@@ -538,30 +538,6 @@ function renderActionAudit() {
   const audit = $("#actionAudit");
   if (!audit) return;
   const todayActions = state.actions.filter((item) => item.day === TODAY_DAY);
-  const grouped = state.people
-    .map((person) => {
-      const rows = todayActions.filter((item) => item.person === person.name);
-      return `
-        <section class="audit-person">
-          <div class="audit-person-head">
-            ${personAvatar(person)}
-            <div>
-              <strong>${person.name}</strong>
-              <small>${rows.length} 个操作</small>
-            </div>
-          </div>
-          <div class="audit-rows">
-            ${
-              rows.length
-                ? rows.map(actionRow).join("")
-                : `<div class="audit-empty">今天还没有操作</div>`
-            }
-          </div>
-        </section>
-      `;
-    })
-    .join("");
-
   audit.innerHTML = `
     <div class="audit-head">
       <div>
@@ -570,19 +546,23 @@ function renderActionAudit() {
       </div>
       <span>${todayActions.length}</span>
     </div>
-    ${grouped}
+    <div class="audit-list">
+      ${
+        todayActions.length
+          ? todayActions.slice(0, 8).map(actionRow).join("")
+          : `<div class="audit-empty">今天还没有操作</div>`
+      }
+    </div>
   `;
 }
 
 function actionRow(item) {
+  const detail = item.detail ? `（${item.detail}）` : "";
   return `
-    <div class="audit-row">
+    <p class="audit-row">
       <span>${item.time}</span>
-      <div>
-        <strong>${item.action}</strong>
-        ${item.detail ? `<small>${item.detail}</small>` : ""}
-      </div>
-    </div>
+      <strong>${item.person}</strong>：${item.action}${detail}
+    </p>
   `;
 }
 
