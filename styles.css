@@ -603,9 +603,11 @@ h3 {
 
 .action-audit {
   display: grid;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 12px 13px;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #f4efe4;
+  box-shadow: none;
 }
 
 .audit-head {
@@ -615,26 +617,35 @@ h3 {
   gap: 10px;
 }
 
-.audit-head span {
-  display: grid;
-  place-items: center;
-  min-width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--tile);
-  color: var(--gold);
-  font-size: 12px;
-  font-weight: 900;
+.audit-head span,
+.audit-head small {
+  display: inline;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
 }
 
-.audit-row strong {
-  font-weight: 860;
+.audit-head small::before {
+  content: " · ";
+}
+
+.audit-head em {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 400;
 }
 
 .audit-empty {
   color: var(--muted);
   font-size: 10px;
-  font-weight: 680;
+  font-weight: 400;
 }
 
 .audit-list {
@@ -644,9 +655,9 @@ h3 {
 
 .audit-row {
   margin: 0;
-  color: var(--ink);
-  font-size: 11px;
-  font-weight: 680;
+  color: #6f6660;
+  font-size: 10px;
+  font-weight: 400;
   line-height: 1.55;
 }
 
@@ -655,7 +666,7 @@ h3 {
   min-width: 38px;
   color: var(--muted);
   font-size: 10px;
-  font-weight: 760;
+  font-weight: 400;
 }
 
 .audit-empty {

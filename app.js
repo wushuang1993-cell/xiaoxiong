@@ -541,10 +541,10 @@ function renderActionAudit() {
   audit.innerHTML = `
     <div class="audit-head">
       <div>
-        <p class="date-line">防作弊记录</p>
-        <h2>今日操作</h2>
+        <span>防作弊记录</span>
+        <small>每日记录</small>
       </div>
-      <span>${todayActions.length}</span>
+      <em>${todayActions.length}</em>
     </div>
     <div class="audit-list">
       ${
@@ -561,7 +561,7 @@ function actionRow(item) {
   return `
     <p class="audit-row">
       <span>${item.time}</span>
-      <strong>${item.person}</strong>：${item.action}${detail}
+      ${item.person}：${item.action}${detail}
     </p>
   `;
 }
