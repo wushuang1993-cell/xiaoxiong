@@ -1,13 +1,14 @@
-const TODAY_STORAGE_KEY = "bear-app-v23-2026-06-21";
 const ASSET_VERSION = "20260621-watercolor-2";
 const today = new Date();
+const TODAY_ID = today.toISOString().slice(0, 10);
+const TODAY_STORAGE_KEY = `bear-app-v24-${TODAY_ID}`;
 const TODAY_MONTH = today.getMonth() + 1;
 const TODAY_DAY = today.getDate();
 let authApi = null;
 
 const state = {
   view: "bears",
-  selectedDay: 21,
+  selectedDay: TODAY_DAY,
   selectedPerson: "闪闪鱼",
   currentUser: "闪闪鱼",
   auth: {
@@ -47,7 +48,7 @@ const state = {
     17: [{ type: "做家务", person: "杰尼龟", detail: "洗衣服", delta: 1 }],
     19: [{ type: "价值家务", person: "闪闪鱼", detail: "设计封面图", delta: 3 }],
     20: [{ type: "扣分", person: "杰尼龟", detail: "未完成基础家务", delta: -1 }],
-    21: [],
+    [TODAY_DAY]: [],
   },
   rules: {
     drink: [
@@ -220,7 +221,7 @@ function drawInitial() {
     return;
   }
   state.drawRound = 1;
-  state.draw = runDraw("bear-2026-06-21-free");
+  state.draw = runDraw(`bear-${TODAY_ID}-free`);
   state.drawUsed = true;
   recordAction(state.currentUser, "今日已抽签", `校验码 ${state.draw.checksum}`);
   saveToday();
@@ -267,7 +268,7 @@ function applyApprovedRedraw() {
     return;
   }
   state.drawRound += 1;
-  state.draw = runDraw(`bear-${today.toISOString().slice(0, 10)}-paid-${state.drawRound}`);
+  state.draw = runDraw(`bear-${TODAY_ID}-paid-${state.drawRound}`);
   addLog(TODAY_DAY, { type: "重新抽签", person: applicant.name, detail: `${approver.name}已同意`, delta: -3 });
   recordAction(approver.name, "同意重抽", `${applicant.name}扣 3 金币`);
   state.pendingRedraw = null;
@@ -290,7 +291,7 @@ function applyApprovedExchange() {
   mine[offerIndex] = pending.targetBear;
   theirs[targetIndex] = outgoing;
   recordAction(approver.name, "同意兑换", `${applicant.name}获得${pending.targetBear}`);
-  addLog(21, {
+  addLog(TODAY_DAY, {
     type: "兑换小熊",
     person: applicant.name,
     detail: `用${pending.offerBear}换${pending.targetBear}`,
@@ -435,7 +436,7 @@ function renderBearScreen() {
 
 function renderHeroBear() {
   const pool = activeBears();
-  const index = hashString("hero-bear-2026-06-21") % pool.length;
+  const index = hashString(`hero-bear-${TODAY_ID}`) % pool.length;
   const bear = pool[index];
   const image = $("#heroBear");
   if (!image) return;
@@ -1482,7 +1483,7 @@ function bindEvents() {
       person.coins -= 1;
       person.wishBear = wish.dataset.wishBear;
       recordAction(person.name, "修改心愿小熊", wish.dataset.wishBear);
-      addLog(21, {
+      addLog(TODAY_DAY, {
         type: "心愿小熊",
         person: person.name,
         detail: wish.dataset.wishBear,
