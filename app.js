@@ -1,10 +1,12 @@
+import { loadRemoteState, saveRemoteState } from "./src/remoteState.js";
+
 const ASSET_VERSION = "20260621-watercolor-2";
 const today = new Date();
 const TODAY_ID = today.toISOString().slice(0, 10);
-const TODAY_STORAGE_KEY = `bear-app-v25-live-${TODAY_ID}`;
 const TODAY_MONTH = today.getMonth() + 1;
 const TODAY_DAY = today.getDate();
 let authApi = null;
+let remoteSaveTimer = null;
 
 const state = {
   view: "bears",
@@ -16,6 +18,12 @@ const state = {
     configured: false,
     user: null,
     email: "",
+    message: "",
+  },
+  sync: {
+    mode: "waiting",
+    loaded: false,
+    saving: false,
     message: "",
   },
   draw: null,
@@ -85,67 +93,88 @@ function seededRandom(seed) {
 }
 
 function saveToday() {
-  localStorage.setItem(
-    TODAY_STORAGE_KEY,
-    JSON.stringify({
-      draw: state.draw,
-      drawUsed: state.drawUsed,
-      drawRound: state.drawRound,
-      pendingExchange: state.pendingExchange,
-      pendingRedraw: state.pendingRedraw,
-      actions: state.actions,
-      currentUser: state.currentUser,
-      people: state.people.map(({ name, mark, wishBear, coins, avatar, image }) => ({
-        name,
-        mark,
-        wishBear,
-        coins,
-        avatar,
-        image,
-      })),
-      bears: state.bears,
-      rules: state.rules,
-      logs: state.logs,
-    }),
-  );
+  if (!state.auth.configured) {
+    state.sync = { ...state.sync, mode: "preview", message: "未配置 Supabase，当前不会保存到本地。" };
+    return;
+  }
+
+  if (!state.auth.user) {
+    state.sync = { ...state.sync, mode: "signed-out", message: "登录后才会保存到线上。" };
+    return;
+  }
+
+  clearTimeout(remoteSaveTimer);
+  state.sync = { ...state.sync, mode: "online", saving: true, message: "正在同步..." };
+  remoteSaveTimer = setTimeout(async () => {
+    try {
+      await saveRemoteState(serializeSharedState());
+      state.sync = { ...state.sync, mode: "online", saving: false, message: "已同步到线上" };
+      renderCurrentUser();
+    } catch (error) {
+      state.sync = { ...state.sync, mode: "error", saving: false, message: error.message || "线上同步失败" };
+      showToast("线上同步失败");
+      renderCurrentUser();
+    }
+  }, 220);
 }
 
-function loadToday() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(TODAY_STORAGE_KEY) || "null");
-    if (!saved) return;
-    state.draw = saved.draw || null;
-    state.drawUsed = Boolean(saved.drawUsed && saved.draw);
-    state.drawRound = saved.drawRound || 0;
-    state.pendingExchange = saved.pendingExchange || null;
-    state.pendingRedraw = saved.pendingRedraw || null;
-    state.actions = Array.isArray(saved.actions) ? saved.actions : [];
-    state.currentUser = saved.currentUser || state.currentUser;
-    state.logs = saved.logs || state.logs;
-    if (Array.isArray(saved.bears) && saved.bears.length >= 2) {
-      state.bears = saved.bears.map((bear) => ({ ...bear, active: bear.active !== false }));
-    }
-    if (saved.rules?.base && saved.rules?.bonus && saved.rules?.penalty) {
-      state.rules = {
-        drink: saved.rules.drink || state.rules.drink,
-        base: saved.rules.base,
-        bonus: saved.rules.bonus,
-        penalty: saved.rules.penalty,
-      };
-    }
-    if (Array.isArray(saved.people)) {
-      saved.people.forEach((savedPerson) => {
-        const person = personByName(savedPerson.name);
-        if (!person) return;
-        person.wishBear = savedPerson.wishBear || person.wishBear;
-        person.coins = Number.isFinite(savedPerson.coins) ? savedPerson.coins : person.coins;
-        person.image = savedPerson.image || person.image;
-        person.avatar = savedPerson.avatar || person.avatar;
-      });
-    }
-  } catch {
-    localStorage.removeItem(TODAY_STORAGE_KEY);
+function serializeSharedState() {
+  return {
+    version: 1,
+    savedAt: new Date().toISOString(),
+    todayId: TODAY_ID,
+    draw: state.draw,
+    drawUsed: state.drawUsed,
+    drawRound: state.drawRound,
+    pendingExchange: state.pendingExchange,
+    pendingRedraw: state.pendingRedraw,
+    actions: state.actions,
+    people: state.people.map(({ name, mark, wishBear, coins, avatar, image }) => ({
+      name,
+      mark,
+      wishBear,
+      coins,
+      avatar,
+      image,
+    })),
+    bears: state.bears,
+    rules: state.rules,
+    logs: state.logs,
+  };
+}
+
+function applySharedState(saved) {
+  if (!saved) return false;
+  state.draw = saved.draw || null;
+  state.drawUsed = Boolean(saved.drawUsed && saved.draw);
+  state.drawRound = saved.drawRound || 0;
+  state.pendingExchange = saved.pendingExchange || null;
+  state.pendingRedraw = saved.pendingRedraw || null;
+  state.actions = Array.isArray(saved.actions) ? saved.actions : [];
+  state.logs = saved.logs || { [TODAY_DAY]: [] };
+  if (!state.logs[TODAY_DAY]) state.logs[TODAY_DAY] = [];
+  if (Array.isArray(saved.bears) && saved.bears.length >= 1) {
+    state.bears = saved.bears.map((bear) => ({ ...bear, active: bear.active !== false }));
   }
+  if (saved.rules?.base && saved.rules?.bonus && saved.rules?.penalty) {
+    state.rules = {
+      drink: saved.rules.drink || state.rules.drink,
+      base: saved.rules.base,
+      bonus: saved.rules.bonus,
+      penalty: saved.rules.penalty,
+    };
+  }
+  if (Array.isArray(saved.people)) {
+    saved.people.forEach((savedPerson) => {
+      const person = personByName(savedPerson.name);
+      if (!person) return;
+      person.wishBear = savedPerson.wishBear || person.wishBear;
+      person.coins = Number.isFinite(savedPerson.coins) ? savedPerson.coins : person.coins;
+      person.image = savedPerson.image || person.image;
+      person.avatar = savedPerson.avatar || person.avatar;
+    });
+  }
+  return true;
 }
 
 function personByName(name) {
@@ -405,10 +434,11 @@ function renderCurrentUser() {
   const current = personByName(state.currentUser);
   const pill = $("#currentUserPill");
   if (!current || !pill) return;
+  const syncLabel = state.auth.user ? (state.sync.saving ? "同步中" : "线上") : state.auth.configured ? "未登录" : "预览";
   pill.innerHTML = `
     ${personAvatar(current)}
     <span>${current.name}</span>
-    <small>${state.auth.user ? "已登录" : "本地"}</small>
+    <small>${syncLabel}</small>
   `;
 }
 
@@ -877,8 +907,8 @@ function renderAuthPanel() {
     return `
       <section class="auth-panel local">
         <div>
-          <strong>本地原型模式</strong>
-          <small>${state.auth.message || "配置 Supabase 环境变量后，可以用邮箱登录。"}</small>
+          <strong>预览模式</strong>
+          <small>${state.auth.message || "配置 Supabase 后才能保存到线上；当前不再保存到本地。"}</small>
         </div>
       </section>
     `;
@@ -889,7 +919,7 @@ function renderAuthPanel() {
       <section class="auth-panel signed-in">
         <div>
           <strong>已登录</strong>
-          <small>${state.auth.email}</small>
+          <small>${state.auth.email} · ${state.sync.message || "线上同步已启用"}</small>
         </div>
         <button class="small-action" id="authSignOut" type="button">退出</button>
       </section>
@@ -1492,8 +1522,18 @@ async function bootAuth() {
   try {
     const auth = await import("./src/auth.js");
     authApi = auth;
-    await auth.watchAuth((snapshot) => {
+    await auth.watchAuth(async (snapshot) => {
       state.auth = { ready: true, ...snapshot };
+      if (snapshot.user) {
+        await bootRemoteState();
+      } else {
+        state.sync = {
+          ...state.sync,
+          mode: snapshot.configured ? "signed-out" : "preview",
+          loaded: false,
+          message: snapshot.configured ? "登录后保存到线上。" : "当前不会保存到本地。",
+        };
+      }
       renderAll();
     });
   } catch (error) {
@@ -1508,7 +1548,23 @@ async function bootAuth() {
   }
 }
 
-loadToday();
+async function bootRemoteState() {
+  try {
+    state.sync = { ...state.sync, mode: "online", loaded: false, message: "正在读取线上数据..." };
+    const remote = await loadRemoteState();
+    if (remote) {
+      applySharedState(remote);
+      state.sync = { ...state.sync, mode: "online", loaded: true, message: "已读取线上数据" };
+    } else {
+      state.sync = { ...state.sync, mode: "online", loaded: true, message: "已创建线上初始数据" };
+      await saveRemoteState(serializeSharedState());
+    }
+  } catch (error) {
+    state.sync = { ...state.sync, mode: "error", loaded: false, message: error.message || "读取线上数据失败" };
+    showToast("读取线上数据失败");
+  }
+}
+
 bindEvents();
 renderAll();
 bootAuth();

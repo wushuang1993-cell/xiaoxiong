@@ -80,7 +80,17 @@ VITE_SUPABASE_ANON_KEY=<anon public key>
 
 本地开发时，把同样的值填入 `.env.local`。
 
-## 第六步：后续真实登录和数据接入
+## 第六步：启用线上共享状态
+
+如果之前已经运行过 `supabase/schema.sql`，还需要在 Supabase SQL Editor 里额外运行：
+
+```bash
+supabase/20260625_app_states.sql
+```
+
+运行后，登录用户会把小熊 App 的共享状态写入 Supabase `app_states`。App 不再把正式数据保存到浏览器本地。
+
+## 第七步：后续真实登录和数据接入
 
 登录入口已经在 App 左上角身份胶囊里预留：
 
