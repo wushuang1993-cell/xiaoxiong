@@ -78,6 +78,8 @@ VITE_SUPABASE_URL=<Project URL>
 VITE_SUPABASE_ANON_KEY=<anon public key>
 ```
 
+如果 Supabase 只显示 publishable key，可以把它填为 `VITE_SUPABASE_PUBLISHABLE_KEY`；App 会兼容这两个 key 名称。
+
 本地开发时，把同样的值填入 `.env.local`。
 
 ## 第六步：启用线上共享状态

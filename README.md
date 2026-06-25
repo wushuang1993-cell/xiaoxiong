@@ -51,6 +51,12 @@ VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 ```
 
+如果 Supabase 界面显示的是 publishable key，也可以使用：
+
+```bash
+VITE_SUPABASE_PUBLISHABLE_KEY=
+```
+
 配置完成后重新启动本地服务：
 
 ```bash
