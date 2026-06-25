@@ -1,7 +1,7 @@
 const ASSET_VERSION = "20260621-watercolor-2";
 const today = new Date();
 const TODAY_ID = today.toISOString().slice(0, 10);
-const TODAY_STORAGE_KEY = `bear-app-v24-${TODAY_ID}`;
+const TODAY_STORAGE_KEY = `bear-app-v25-live-${TODAY_ID}`;
 const TODAY_MONTH = today.getMonth() + 1;
 const TODAY_DAY = today.getDate();
 let authApi = null;
@@ -30,8 +30,8 @@ const state = {
   editingBear: null,
   editingMember: null,
   people: [
-    { name: "闪闪鱼", mark: "闪", wishBear: "史迪奇", coins: 9, avatar: "fish", image: "assets/shanshanyu.png" },
-    { name: "杰尼龟", mark: "杰", wishBear: "卢卡斯", coins: 8, avatar: "turtle", image: "assets/jienigui.png" },
+    { name: "闪闪鱼", mark: "闪", wishBear: "史迪奇", coins: 0, avatar: "fish", image: "assets/shanshanyu.png" },
+    { name: "杰尼龟", mark: "杰", wishBear: "卢卡斯", coins: 0, avatar: "turtle", image: "assets/jienigui.png" },
   ],
   bears: [
     { name: "史迪奇", color: "#92cfff", image: "assets/stitch.png", active: true },
@@ -41,15 +41,7 @@ const state = {
     { name: "马里奥", color: "#c9935e", image: "assets/mario.png", active: true },
     { name: "爱丽丝", color: "#b5e2dd", image: "assets/alice.png", active: true },
   ],
-  logs: {
-    10: [{ type: "咖啡", person: "闪闪鱼", delta: 0 }],
-    11: [{ type: "奶茶", person: "杰尼龟", delta: 0 }],
-    14: [{ type: "咖啡", person: "闪闪鱼", delta: 0 }],
-    17: [{ type: "做家务", person: "杰尼龟", detail: "洗衣服", delta: 1 }],
-    19: [{ type: "价值家务", person: "闪闪鱼", detail: "设计封面图", delta: 3 }],
-    20: [{ type: "扣分", person: "杰尼龟", detail: "未完成基础家务", delta: -1 }],
-    [TODAY_DAY]: [],
-  },
+  logs: { [TODAY_DAY]: [] },
   rules: {
     drink: [
       { label: "咖啡", value: "+0 金币" },
