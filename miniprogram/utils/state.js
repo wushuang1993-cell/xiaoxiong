@@ -32,6 +32,20 @@ const DEFAULT_STATE = {
   }
 };
 
+const BEAR_IMAGE_BY_NAME = {
+  史迪奇: "/assets/stitch.png",
+  拖拉机: "/assets/tractor.png",
+  芭芭拉: "/assets/barbara.png",
+  卢卡斯: "/assets/lucas.png",
+  马里奥: "/assets/mario.png",
+  爱丽丝: "/assets/alice.png"
+};
+
+const PERSON_IMAGE_BY_NAME = {
+  闪闪鱼: "/assets/shanshanyu.png",
+  杰尼龟: "/assets/jienigui.png"
+};
+
 function request(path, method = "GET", data = undefined) {
   const app = getApp();
   return new Promise((resolve, reject) => {
@@ -66,11 +80,11 @@ function normalizeState(state = DEFAULT_STATE) {
     ...state,
     people: (state.people || DEFAULT_STATE.people).map((person) => ({
       ...person,
-      image: normalizeAssetPath(person.image)
+      image: normalizeAssetPath(person.image || PERSON_IMAGE_BY_NAME[person.name])
     })),
     bears: (state.bears || DEFAULT_STATE.bears).map((bear) => ({
       ...bear,
-      image: normalizeAssetPath(bear.image),
+      image: normalizeAssetPath(bear.image || BEAR_IMAGE_BY_NAME[bear.name]),
       active: bear.active !== false
     })),
     actions: state.actions || [],
