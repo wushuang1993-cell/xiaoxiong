@@ -1,15 +1,15 @@
 const DEFAULT_STATE = {
   people: [
-    { name: "闪闪鱼", coins: 0, wishBear: "史迪奇", image: "/assets/shanshanyu.png" },
-    { name: "杰尼龟", coins: 0, wishBear: "卢卡斯", image: "/assets/jienigui.png" }
+    { name: "闪闪鱼", coins: 0, wishBear: "史迪奇", image: "../../assets/shanshanyu.png" },
+    { name: "杰尼龟", coins: 0, wishBear: "卢卡斯", image: "../../assets/jienigui.png" }
   ],
   bears: [
-    { name: "史迪奇", image: "/assets/stitch.png", active: true },
-    { name: "拖拉机", image: "/assets/tractor.png", active: true },
-    { name: "芭芭拉", image: "/assets/barbara.png", active: true },
-    { name: "卢卡斯", image: "/assets/lucas.png", active: true },
-    { name: "马里奥", image: "/assets/mario.png", active: true },
-    { name: "爱丽丝", image: "/assets/alice.png", active: true }
+    { name: "史迪奇", image: "../../assets/stitch.png", active: true },
+    { name: "拖拉机", image: "../../assets/tractor.png", active: true },
+    { name: "芭芭拉", image: "../../assets/barbara.png", active: true },
+    { name: "卢卡斯", image: "../../assets/lucas.png", active: true },
+    { name: "马里奥", image: "../../assets/mario.png", active: true },
+    { name: "爱丽丝", image: "../../assets/alice.png", active: true }
   ],
   draw: null,
   drawUsed: false,
@@ -33,17 +33,17 @@ const DEFAULT_STATE = {
 };
 
 const BEAR_IMAGE_BY_NAME = {
-  史迪奇: "/assets/stitch.png",
-  拖拉机: "/assets/tractor.png",
-  芭芭拉: "/assets/barbara.png",
-  卢卡斯: "/assets/lucas.png",
-  马里奥: "/assets/mario.png",
-  爱丽丝: "/assets/alice.png"
+  史迪奇: "../../assets/stitch.png",
+  拖拉机: "../../assets/tractor.png",
+  芭芭拉: "../../assets/barbara.png",
+  卢卡斯: "../../assets/lucas.png",
+  马里奥: "../../assets/mario.png",
+  爱丽丝: "../../assets/alice.png"
 };
 
 const PERSON_IMAGE_BY_NAME = {
-  闪闪鱼: "/assets/shanshanyu.png",
-  杰尼龟: "/assets/jienigui.png"
+  闪闪鱼: "../../assets/shanshanyu.png",
+  杰尼龟: "../../assets/jienigui.png"
 };
 
 function request(path, method = "GET", data = undefined) {
@@ -53,7 +53,7 @@ function request(path, method = "GET", data = undefined) {
       url: `${app.globalData.apiBaseUrl}${path}`,
       method,
       data,
-      timeout: 20000,
+      timeout: 60000,
       header: { "content-type": "application/json" },
       success(res) {
         if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -71,7 +71,8 @@ function request(path, method = "GET", data = undefined) {
 
 function normalizeAssetPath(path) {
   if (!path || path.startsWith("http") || path.startsWith("data:")) return path;
-  return path.startsWith("/") ? path : `/${path}`;
+  if (path.startsWith("../../")) return path;
+  return path.replace(/^\/?assets\//, "../../assets/");
 }
 
 function normalizeState(state = DEFAULT_STATE) {

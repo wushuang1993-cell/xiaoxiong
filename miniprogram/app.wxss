@@ -24,14 +24,24 @@ page {
 }
 
 .button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   height: 76rpx;
+  margin: 0;
+  padding: 0 24rpx;
   border-radius: 999rpx;
   border: 0;
   background: #d99a49;
   color: #fff;
   font-size: 26rpx;
   font-weight: 600;
-  line-height: 76rpx;
+  line-height: 1;
+}
+
+.button::after {
+  border: 0;
 }
 
 .button.secondary {

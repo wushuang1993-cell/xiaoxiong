@@ -3,7 +3,7 @@ const { DEFAULT_STATE, addAction, drawBears, loadState, normalizeState, saveStat
 Page({
   data: {
     dateText: "",
-    state: { people: [], bears: [], actions: [] },
+    state: DEFAULT_STATE,
     assignments: {},
     bearMap: {},
     heroBear: {}
@@ -25,6 +25,7 @@ Page({
 
   setState(state) {
     const safeState = normalizeState(state);
+    const assignments = safeState.draw?.assignments || {};
     const bearMap = {};
     safeState.bears.forEach((bear) => {
       bearMap[bear.name] = bear;
@@ -33,7 +34,7 @@ Page({
     this.setData({
       dateText: this.formatDate(),
       state: safeState,
-      assignments: safeState.draw?.assignments || {},
+      assignments,
       bearMap,
       heroBear
     });
