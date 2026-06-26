@@ -39,6 +39,7 @@ function request(path, method = "GET", data = undefined) {
       url: `${app.globalData.apiBaseUrl}${path}`,
       method,
       data,
+      timeout: 20000,
       header: { "content-type": "application/json" },
       success(res) {
         if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -52,6 +53,33 @@ function request(path, method = "GET", data = undefined) {
       }
     });
   });
+}
+
+function normalizeAssetPath(path) {
+  if (!path || path.startsWith("http") || path.startsWith("data:")) return path;
+  return path.startsWith("/") ? path : `/${path}`;
+}
+
+function normalizeState(state = DEFAULT_STATE) {
+  return {
+    ...DEFAULT_STATE,
+    ...state,
+    people: (state.people || DEFAULT_STATE.people).map((person) => ({
+      ...person,
+      image: normalizeAssetPath(person.image)
+    })),
+    bears: (state.bears || DEFAULT_STATE.bears).map((bear) => ({
+      ...bear,
+      image: normalizeAssetPath(bear.image),
+      active: bear.active !== false
+    })),
+    actions: state.actions || [],
+    logs: state.logs || {},
+    rules: {
+      ...DEFAULT_STATE.rules,
+      ...(state.rules || {})
+    }
+  };
 }
 
 function activeBears(state) {
@@ -86,7 +114,7 @@ function addAction(state, person, action, detail = "") {
 
 async function loadState() {
   const data = await request("/api/state");
-  return data.payload || DEFAULT_STATE;
+  return normalizeState(data.payload || DEFAULT_STATE);
 }
 
 async function saveState(state) {
@@ -104,5 +132,6 @@ module.exports = {
   addAction,
   drawBears,
   loadState,
+  normalizeState,
   saveState
 };

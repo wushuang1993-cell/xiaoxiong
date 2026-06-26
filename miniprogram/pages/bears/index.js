@@ -1,4 +1,4 @@
-const { addAction, drawBears, loadState, saveState } = require("../../utils/state");
+const { DEFAULT_STATE, addAction, drawBears, loadState, normalizeState, saveState } = require("../../utils/state");
 
 Page({
   data: {
@@ -18,20 +18,22 @@ Page({
       const state = await loadState();
       this.setState(state);
     } catch (error) {
+      this.setState(normalizeState(DEFAULT_STATE));
       wx.showToast({ title: "读取失败", icon: "none" });
     }
   },
 
   setState(state) {
+    const safeState = normalizeState(state);
     const bearMap = {};
-    state.bears.forEach((bear) => {
+    safeState.bears.forEach((bear) => {
       bearMap[bear.name] = bear;
     });
-    const heroBear = state.bears[new Date().getDate() % state.bears.length] || state.bears[0];
+    const heroBear = safeState.bears[new Date().getDate() % safeState.bears.length] || safeState.bears[0] || {};
     this.setData({
       dateText: this.formatDate(),
-      state,
-      assignments: state.draw?.assignments || {},
+      state: safeState,
+      assignments: safeState.draw?.assignments || {},
       bearMap,
       heroBear
     });

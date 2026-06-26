@@ -1,4 +1,4 @@
-const { addAction, loadState, saveState } = require("../../utils/state");
+const { DEFAULT_STATE, addAction, loadState, normalizeState, saveState } = require("../../utils/state");
 
 Page({
   data: {
@@ -18,24 +18,26 @@ Page({
       const state = await loadState();
       this.renderState(state);
     } catch (error) {
+      this.renderState(normalizeState(DEFAULT_STATE));
       wx.showToast({ title: "读取失败", icon: "none" });
     }
   },
 
   renderState(state) {
+    const safeState = normalizeState(state);
     const day = new Date().getDate();
     const quickRules = [
-      ...(state.rules?.base || []),
-      ...(state.rules?.bonus || []),
-      ...(state.rules?.penalty || [])
+      ...(safeState.rules?.base || []),
+      ...(safeState.rules?.bonus || []),
+      ...(safeState.rules?.penalty || [])
     ].map((rule) => ({
       label: rule.label,
       delta: Number(String(rule.value).match(/[-+]?\d+/)?.[0] || 0)
     }));
     this.setData({
       dateText: this.formatDate(),
-      state,
-      todayLogs: state.logs?.[day] || [],
+      state: safeState,
+      todayLogs: safeState.logs?.[day] || [],
       quickRules
     });
   },

@@ -1,4 +1,4 @@
-const { DEFAULT_STATE, loadState } = require("../../utils/state");
+const { DEFAULT_STATE, loadState, normalizeState } = require("../../utils/state");
 
 Page({
   data: {
@@ -12,8 +12,9 @@ Page({
   async refresh() {
     try {
       const state = await loadState();
-      this.setData({ state });
+      this.setData({ state: normalizeState(state) });
     } catch (error) {
+      this.setData({ state: normalizeState(DEFAULT_STATE) });
       wx.showToast({ title: "读取失败", icon: "none" });
     }
   }
