@@ -1,0 +1,34 @@
+<view class="screen rules-screen">
+  <view class="head">
+    <text class="muted">小程序适配版</text>
+    <view class="title">金币规则</view>
+  </view>
+
+  <view class="soft-card section">
+    <text class="section-title">基础家务</text>
+    <view class="rule-line" wx:for="{{state.rules.base}}" wx:key="label">
+      <text>{{item.label}}</text>
+      <text class="plus">{{item.value}}</text>
+    </view>
+  </view>
+
+  <view class="soft-card section">
+    <text class="section-title">增值家务</text>
+    <view class="rule-line" wx:for="{{state.rules.bonus}}" wx:key="label">
+      <text>{{item.label}}</text>
+      <text class="plus">{{item.value}}</text>
+    </view>
+  </view>
+
+  <view class="soft-card section">
+    <text class="section-title">扣分</text>
+    <view class="rule-line" wx:for="{{state.rules.penalty}}" wx:key="label">
+      <text>{{item.label}}</text>
+      <text class="minus">{{item.value}}</text>
+    </view>
+  </view>
+
+  <view class="soft-card note">
+    <text>新增/编辑规则已在网页版完成，小程序第一版先读取同一份线上规则。</text>
+  </view>
+</view>

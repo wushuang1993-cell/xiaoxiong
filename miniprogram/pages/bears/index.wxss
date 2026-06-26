@@ -1,0 +1,110 @@
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 34rpx;
+  background: linear-gradient(120deg, #fff1cf, #e7f4df);
+}
+
+.title {
+  margin-top: 16rpx;
+  font-size: 48rpx;
+  font-weight: 800;
+}
+
+.chip {
+  display: inline-flex;
+  margin-top: 18rpx;
+  padding: 10rpx 22rpx;
+  border-radius: 999rpx;
+  background: rgba(214, 154, 73, 0.18);
+  color: #7a5834;
+  font-size: 24rpx;
+}
+
+.hero-bear {
+  width: 190rpx;
+  height: 150rpx;
+}
+
+.people-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22rpx;
+  margin-top: 24rpx;
+}
+
+.person-card {
+  min-height: 300rpx;
+  padding: 26rpx 18rpx;
+  border-radius: 30rpx;
+  text-align: center;
+}
+
+.person-card.pink {
+  background: #f8dce9;
+}
+
+.person-card.green {
+  background: #e4f1dc;
+}
+
+.person-avatar {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.name {
+  display: block;
+  margin-top: 8rpx;
+  font-weight: 700;
+}
+
+.bear-row {
+  display: flex;
+  justify-content: center;
+  gap: 10rpx;
+  margin-top: 20rpx;
+}
+
+.mini-bear {
+  width: 70rpx;
+  padding: 8rpx 4rpx;
+  border-radius: 18rpx;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 18rpx;
+}
+
+.mini-bear image {
+  width: 52rpx;
+  height: 52rpx;
+}
+
+.draw-button {
+  margin-top: 26rpx;
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx;
+  margin-top: 26rpx;
+}
+
+.audit {
+  margin-top: 24rpx;
+  padding: 24rpx;
+  background: #f3ebdc;
+}
+
+.audit-line {
+  margin-top: 12rpx;
+  color: #6f6258;
+  font-size: 22rpx;
+}
+
+.empty {
+  margin-top: 12rpx;
+}

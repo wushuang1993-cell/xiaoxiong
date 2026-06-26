@@ -1,0 +1,18 @@
+{
+  "description": "小熊 App 微信小程序适配版",
+  "packOptions": {
+    "ignore": []
+  },
+  "setting": {
+    "urlCheck": true,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "latest",
+  "appid": "touristappid",
+  "projectname": "xiaoxiong-miniprogram",
+  "condition": {}
+}

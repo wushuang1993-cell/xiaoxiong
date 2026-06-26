@@ -86,6 +86,22 @@ supabase/schema.sql
 
 创建 Supabase 项目后，在 SQL Editor 里运行这个文件。它会创建家庭、成员、小熊、心愿小熊、金币规则、日历记录、抽签、兑换申请、金币流水，以及当前线上共享状态 `app_states`。
 
+## 微信小程序适配
+
+仓库已新增原生小程序工程：
+
+```bash
+miniprogram/
+```
+
+微信开发者工具导入这个目录即可预览。详细设置见：
+
+```bash
+docs/wechat/miniprogram.md
+```
+
+小程序端通过 Vercel API `api/state.js` 读写 Supabase；上线前需要在 Vercel 增加服务端变量 `SUPABASE_SERVICE_ROLE_KEY`，并在微信公众平台配置 request 合法域名。
+
 ## 下一步开发顺序
 
 1. 建立家庭空间和邀请码，让两个账号加入同一个家庭。

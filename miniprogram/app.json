@@ -1,0 +1,35 @@
+{
+  "pages": [
+    "pages/bears/index",
+    "pages/calendar/index",
+    "pages/rules/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "小熊 App",
+    "navigationBarBackgroundColor": "#F8F2E8",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F8F2E8"
+  },
+  "tabBar": {
+    "color": "#9B8F86",
+    "selectedColor": "#D59649",
+    "backgroundColor": "#FFFDF8",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/bears/index",
+        "text": "小熊"
+      },
+      {
+        "pagePath": "pages/calendar/index",
+        "text": "日历"
+      },
+      {
+        "pagePath": "pages/rules/index",
+        "text": "规则"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

@@ -1,0 +1,30 @@
+<view class="screen calendar-screen">
+  <view class="head">
+    <text class="muted">{{dateText}}</text>
+    <view class="title">家务日历</view>
+  </view>
+
+  <view class="person-switch">
+    <view class="person-pill {{selectedPerson === item.name ? 'active' : ''}}" wx:for="{{state.people}}" wx:key="name" data-name="{{item.name}}" bindtap="selectPerson">
+      <image src="{{item.image}}" mode="aspectFit" />
+      <text>{{item.name}}</text>
+      <text class="muted">{{item.coins}} 金币</text>
+    </view>
+  </view>
+
+  <view class="soft-card section">
+    <text class="section-title">记录类型</text>
+    <view class="tag-grid">
+      <button class="tag" wx:for="{{quickRules}}" wx:key="label" data-label="{{item.label}}" data-delta="{{item.delta}}" bindtap="addLog">{{item.label}}</button>
+    </view>
+  </view>
+
+  <view class="soft-card section">
+    <text class="section-title">今天完成</text>
+    <view class="log-line" wx:for="{{todayLogs}}" wx:key="index">
+      <text>{{item.person}} · {{item.type}}</text>
+      <text>{{item.delta > 0 ? '+' : ''}}{{item.delta}}</text>
+    </view>
+    <view wx:if="{{!todayLogs.length}}" class="muted empty">今天还没有记录</view>
+  </view>
+</view>

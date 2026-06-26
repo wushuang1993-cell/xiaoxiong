@@ -1,0 +1,38 @@
+<view class="screen bears-screen">
+  <view class="hero soft-card">
+    <view>
+      <text class="muted">{{dateText}}</text>
+      <view class="title">今晚小熊</view>
+      <view class="chip">{{state.drawUsed ? '今日已抽签' : '今日未抽签'}}</view>
+    </view>
+    <image class="hero-bear" src="{{heroBear.image}}" mode="aspectFit" />
+  </view>
+
+  <view class="people-grid">
+    <view class="person-card {{index === 0 ? 'pink' : 'green'}}" wx:for="{{state.people}}" wx:key="name">
+      <image class="person-avatar" src="{{item.image}}" mode="aspectFit" />
+      <text class="name">{{item.name}}</text>
+      <text class="muted">{{item.coins}} 金币</text>
+      <view class="bear-row">
+        <view class="mini-bear" wx:for="{{assignments[item.name]}}" wx:key="*this">
+          <image src="{{bearMap[item].image}}" mode="aspectFit" />
+          <text>{{item}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <button wx:if="{{!state.drawUsed}}" class="button draw-button" bindtap="handleDraw">开始抽签</button>
+  <view wx:else class="action-row">
+    <button class="button" bindtap="requestRedraw">申请重抽</button>
+    <button class="button secondary" bindtap="requestExchange">申请兑换</button>
+  </view>
+
+  <view class="audit soft-card">
+    <text class="muted">防作弊记录 · 每日记录</text>
+    <view class="audit-line" wx:for="{{state.actions}}" wx:key="id">
+      <text>{{item.time}} {{item.person}} {{item.action}} {{item.detail}}</text>
+    </view>
+    <view wx:if="{{!state.actions.length}}" class="empty muted">今天还没有操作</view>
+  </view>
+</view>
