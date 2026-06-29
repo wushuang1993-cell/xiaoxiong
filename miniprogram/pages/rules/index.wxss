@@ -122,14 +122,16 @@
 }
 
 .delete-link {
-  height: 44rpx;
+  width: 42rpx;
+  height: 36rpx;
   margin: 0;
-  padding: 0 14rpx;
+  padding: 0;
   border-radius: 999rpx;
   background: #f7dfe4;
   color: #c76578;
-  font-size: 20rpx;
-  line-height: 44rpx;
+  font-size: 18rpx;
+  line-height: 36rpx;
+  text-align: center;
 }
 
 .bear-editor {

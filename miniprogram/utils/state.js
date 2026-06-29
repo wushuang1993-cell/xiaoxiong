@@ -78,6 +78,12 @@ function normalizeAssetPath(path) {
 function normalizeState(state = DEFAULT_STATE) {
   const remotePeople = Array.isArray(state.people) && state.people.length ? state.people : DEFAULT_STATE.people;
   const remoteBears = Array.isArray(state.bears) && state.bears.length ? state.bears : DEFAULT_STATE.bears;
+  const mergedBears = [
+    ...remoteBears,
+    ...DEFAULT_STATE.bears.filter(
+      (defaultBear) => !remoteBears.some((bear) => bear.name === defaultBear.name)
+    )
+  ];
 
   return {
     ...DEFAULT_STATE,
@@ -86,7 +92,7 @@ function normalizeState(state = DEFAULT_STATE) {
       ...person,
       image: normalizeAssetPath(person.image || PERSON_IMAGE_BY_NAME[person.name])
     })),
-    bears: remoteBears.map((bear) => ({
+    bears: mergedBears.map((bear) => ({
       ...bear,
       image: normalizeAssetPath(bear.image || BEAR_IMAGE_BY_NAME[bear.name]),
       active: bear.active !== false

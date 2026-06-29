@@ -4,6 +4,9 @@ Page({
   data: {
     dateText: "",
     selectedPerson: "闪闪鱼",
+    selectedDay: new Date().getDate(),
+    weekDays: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+    calendarDays: [],
     state: { people: [], logs: {}, rules: {} },
     todayLogs: [],
     quickRules: []
@@ -25,7 +28,7 @@ Page({
 
   renderState(state) {
     const safeState = normalizeState(state);
-    const day = new Date().getDate();
+    const selectedDay = this.data.selectedDay || new Date().getDate();
     const quickRules = [
       ...(safeState.rules?.base || []),
       ...(safeState.rules?.bonus || []),
@@ -36,10 +39,38 @@ Page({
     }));
     this.setData({
       dateText: this.formatDate(),
+      selectedDay,
+      calendarDays: this.buildCalendarDays(safeState, selectedDay),
       state: safeState,
-      todayLogs: safeState.logs?.[day] || [],
+      todayLogs: safeState.logs?.[selectedDay] || [],
       quickRules
     });
+  },
+
+  buildCalendarDays(state, selectedDay) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const today = now.getDate();
+    const days = [];
+
+    for (let index = 0; index < firstDay; index += 1) {
+      days.push({ key: `empty-${index}`, day: 0, isEmpty: true });
+    }
+
+    for (let day = 1; day <= totalDays; day += 1) {
+      days.push({
+        key: `day-${day}`,
+        day,
+        isToday: day === today,
+        isSelected: day === selectedDay,
+        hasLogs: Boolean(state.logs?.[day]?.length)
+      });
+    }
+
+    return days;
   },
 
   formatDate() {
@@ -52,6 +83,13 @@ Page({
     const selectedPerson = event.currentTarget.dataset.name;
     getApp().globalData.currentUser = selectedPerson;
     this.setData({ selectedPerson });
+  },
+
+  selectDay(event) {
+    const selectedDay = Number(event.currentTarget.dataset.day || 0);
+    if (!selectedDay) return;
+    this.setData({ selectedDay });
+    this.renderState(this.data.state);
   },
 
   async addLog(event) {

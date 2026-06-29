@@ -33,6 +33,73 @@
   border-radius: 50%;
 }
 
+.calendar-card {
+  margin-top: 22rpx;
+  padding: 24rpx 22rpx;
+}
+
+.week-row {
+  display: flex;
+  color: #a3958a;
+  font-size: 20rpx;
+  line-height: 1;
+}
+
+.week-row text {
+  width: 14.285%;
+  text-align: center;
+}
+
+.month-grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 18rpx;
+}
+
+.day-cell {
+  position: relative;
+  box-sizing: border-box;
+  width: 14.285%;
+  height: 62rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #6a554c;
+  font-size: 22rpx;
+}
+
+.day-cell text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46rpx;
+  height: 46rpx;
+  border-radius: 18rpx;
+}
+
+.day-cell.today text {
+  background: #f7ead5;
+}
+
+.day-cell.selected text {
+  background: #dfa044;
+  color: #fff;
+}
+
+.empty-day {
+  pointer-events: none;
+}
+
+.record-dot {
+  position: absolute;
+  bottom: 4rpx;
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background: #82b58a;
+}
+
 .section {
   margin-top: 22rpx;
   padding: 26rpx;

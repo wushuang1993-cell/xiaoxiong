@@ -43,7 +43,7 @@
       <text>{{rule.label}}</text>
       <view class="rule-actions">
         <text class="{{rule.tone}}">{{rule.value}}</text>
-        <button class="delete-link" data-group="{{item.key}}" data-label="{{rule.label}}" bindtap="deleteRule">删除</button>
+        <button class="delete-link" data-group="{{item.key}}" data-label="{{rule.label}}" bindtap="deleteRule">删</button>
       </view>
     </view>
   </view>

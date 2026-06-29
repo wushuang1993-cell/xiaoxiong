@@ -12,6 +12,24 @@
     </view>
   </view>
 
+  <view class="soft-card calendar-card">
+    <view class="week-row">
+      <text wx:for="{{weekDays}}" wx:key="*this">{{item}}</text>
+    </view>
+    <view class="month-grid">
+      <view
+        class="day-cell {{item.isEmpty ? 'empty-day' : ''}} {{item.isToday ? 'today' : ''}} {{item.isSelected ? 'selected' : ''}}"
+        wx:for="{{calendarDays}}"
+        wx:key="key"
+        data-day="{{item.day}}"
+        bindtap="selectDay"
+      >
+        <text wx:if="{{!item.isEmpty}}">{{item.day}}</text>
+        <view wx:if="{{item.hasLogs}}" class="record-dot"></view>
+      </view>
+    </view>
+  </view>
+
   <view class="soft-card section">
     <text class="section-title">记录类型</text>
     <view class="tag-grid">
@@ -20,7 +38,7 @@
   </view>
 
   <view class="soft-card section">
-    <text class="section-title">今天完成</text>
+    <text class="section-title">{{selectedDay}} 日记录</text>
     <view class="log-line" wx:for="{{todayLogs}}" wx:key="index">
       <text>{{item.person}} · {{item.type}}</text>
       <text>{{item.delta > 0 ? '+' : ''}}{{item.delta}}</text>

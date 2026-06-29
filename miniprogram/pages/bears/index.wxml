@@ -11,13 +11,6 @@
     <button class="wish-button" bindtap="openWishPicker">♡</button>
   </view>
 
-  <view class="wish-strip soft-card">
-    <view class="wish-item" wx:for="{{state.people}}" wx:key="name">
-      <text>{{item.name}}</text>
-      <text>{{item.wishBear || '未设置'}}</text>
-    </view>
-  </view>
-
   <view class="people-grid">
     <view class="person-card {{index === 0 ? 'pink' : 'green'}}" wx:for="{{state.people}}" wx:key="name">
       <view class="person-head">
@@ -43,7 +36,7 @@
 
   <button wx:if="{{!state.drawUsed}}" class="button draw-button" bindtap="handleDraw">开始抽签</button>
   <view wx:else class="action-row">
-    <button class="button" bindtap="requestRedraw">申请重抽</button>
+    <button class="button redraw-button" bindtap="requestRedraw">申请重抽</button>
     <button class="button secondary" bindtap="requestExchange">申请兑换</button>
   </view>
 
