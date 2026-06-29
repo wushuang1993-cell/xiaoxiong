@@ -8,6 +8,14 @@
     <view class="hero-art">
       <image class="hero-bear" src="{{heroBear.image}}" mode="aspectFit" />
     </view>
+    <button class="wish-button" bindtap="openWishPicker">♡</button>
+  </view>
+
+  <view class="wish-strip soft-card">
+    <view class="wish-item" wx:for="{{state.people}}" wx:key="name">
+      <text>{{item.name}}</text>
+      <text>{{item.wishBear || '未设置'}}</text>
+    </view>
   </view>
 
   <view class="people-grid">

@@ -77,5 +77,25 @@ Page({
 
   requestExchange() {
     wx.showToast({ title: "兑换选择下一版接入", icon: "none" });
+  },
+
+  openWishPicker() {
+    const state = normalizeState(this.data.state);
+    const activeBears = state.bears.filter((bear) => bear.active !== false);
+    wx.showActionSheet({
+      itemList: activeBears.map((bear) => bear.name),
+      success: (res) => {
+        const selectedBear = activeBears[res.tapIndex]?.name;
+        if (!selectedBear) return;
+        const currentUser = getApp().globalData.currentUser || "闪闪鱼";
+        const nextState = normalizeState(state);
+        const person = nextState.people.find((item) => item.name === currentUser);
+        if (person) {
+          person.wishBear = selectedBear;
+          nextState.actions = addAction(nextState, currentUser, "设置心愿小熊", selectedBear);
+          this.persist(nextState, "已设置心愿");
+        }
+      }
+    });
   }
 });

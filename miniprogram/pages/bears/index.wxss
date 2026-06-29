@@ -65,6 +65,41 @@
   height: 166rpx;
 }
 
+.wish-button {
+  position: absolute;
+  right: 26rpx;
+  top: 24rpx;
+  z-index: 3;
+  width: 58rpx;
+  height: 58rpx;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.68);
+  color: #d58f9f;
+  font-size: 32rpx;
+  line-height: 58rpx;
+}
+
+.wish-button::after {
+  border: 0;
+}
+
+.wish-strip {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18rpx;
+  padding: 18rpx 22rpx;
+  background: #fffaf1;
+}
+
+.wish-item {
+  display: flex;
+  gap: 10rpx;
+  color: #7b6a60;
+  font-size: 22rpx;
+}
+
 .people-grid {
   display: flex;
   gap: 18rpx;

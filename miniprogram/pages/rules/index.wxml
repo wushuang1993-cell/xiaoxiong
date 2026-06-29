@@ -1,34 +1,70 @@
 <view class="screen rules-screen">
   <view class="head">
-    <text class="muted">小程序适配版</text>
-    <view class="title">金币规则</view>
+    <text class="muted">家庭设置</text>
+    <view class="title">规则</view>
   </view>
 
   <view class="soft-card section">
-    <text class="section-title">基础家务</text>
-    <view class="rule-line" wx:for="{{state.rules.base}}" wx:key="label">
-      <text>{{item.label}}</text>
-      <text class="plus">{{item.value}}</text>
+    <view class="section-top">
+      <view>
+        <text class="section-title">固定邮箱登录</text>
+        <text class="section-note">当前：{{loginSummary}}</text>
+      </view>
+    </view>
+    <input class="input" placeholder="输入固定邮箱" value="{{loginEmail}}" bindinput="onEmailInput" />
+    <view class="two-actions">
+      <button class="button" data-user="闪闪鱼" bindtap="loginAs">闪闪鱼登录</button>
+      <button class="button secondary" data-user="杰尼龟" bindtap="loginAs">杰尼龟登录</button>
     </view>
   </view>
 
   <view class="soft-card section">
-    <text class="section-title">增值家务</text>
-    <view class="rule-line" wx:for="{{state.rules.bonus}}" wx:key="label">
-      <text>{{item.label}}</text>
-      <text class="plus">{{item.value}}</text>
+    <view class="section-top">
+      <view>
+        <text class="section-title">规则设置</text>
+        <text class="section-note">支持自动恢复默认，也可以新增自定义规则。</text>
+      </view>
+      <button class="small-button" bindtap="resetDefaultRules">自动设置</button>
+    </view>
+
+    <view class="rule-editor">
+      <picker mode="selector" range="{{ruleGroups}}" range-key="label" value="{{editingRuleGroupIndex}}" bindchange="onRuleGroupChange">
+        <view class="picker-field">{{selectedRuleGroupLabel}}</view>
+      </picker>
+      <input class="input" placeholder="规则名称，例如 买菜" value="{{ruleName}}" bindinput="onRuleNameInput" />
+      <input class="input" type="number" placeholder="金币，例如 1 或 -1" value="{{ruleAmount}}" bindinput="onRuleAmountInput" />
+      <button class="button" bindtap="addRule">新增规则</button>
+    </view>
+  </view>
+
+  <view class="soft-card section" wx:for="{{ruleSections}}" wx:key="key">
+    <text class="section-title">{{item.title}}</text>
+    <view class="rule-line" wx:for="{{item.rules}}" wx:for-item="rule" wx:key="label">
+      <text>{{rule.label}}</text>
+      <view class="rule-actions">
+        <text class="{{rule.tone}}">{{rule.value}}</text>
+        <button class="delete-link" data-group="{{item.key}}" data-label="{{rule.label}}" bindtap="deleteRule">删除</button>
+      </view>
     </view>
   </view>
 
   <view class="soft-card section">
-    <text class="section-title">扣分</text>
-    <view class="rule-line" wx:for="{{state.rules.penalty}}" wx:key="label">
-      <text>{{item.label}}</text>
-      <text class="minus">{{item.value}}</text>
+    <view class="section-top">
+      <view>
+        <text class="section-title">小熊目录</text>
+        <text class="section-note">开启的小熊会参与抽签，最多 6 只。</text>
+      </view>
     </view>
-  </view>
-
-  <view class="soft-card note">
-    <text>新增/编辑规则已在网页版完成，小程序第一版先读取同一份线上规则。</text>
+    <view class="bear-editor">
+      <input class="input" placeholder="新增小熊名称" value="{{bearName}}" bindinput="onBearNameInput" />
+      <button class="button secondary" bindtap="addBear">新增小熊</button>
+    </view>
+    <view class="bear-line" wx:for="{{state.bears}}" wx:key="name">
+      <view class="bear-name">
+        <image src="{{item.image}}" mode="aspectFit" />
+        <text>{{item.name}}</text>
+      </view>
+      <switch checked="{{item.active}}" data-name="{{item.name}}" bindchange="toggleBear" color="#82b58a" />
+    </view>
   </view>
 </view>
