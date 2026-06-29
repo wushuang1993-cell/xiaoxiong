@@ -21,6 +21,20 @@
   margin-bottom: 18rpx;
 }
 
+.login-title {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.login-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #fff7ea;
+}
+
 .section-title {
   display: block;
   color: #4d3a32;

@@ -46,6 +46,73 @@ const PERSON_IMAGE_BY_NAME = {
   杰尼龟: "../../assets/jienigui.png"
 };
 
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
+function formatDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function parseLogDate(log, fallbackDay) {
+  if (log?.date) {
+    const parsed = new Date(log.date);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  if (log?.createdAt) {
+    const parsed = new Date(log.createdAt);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), Number(fallbackDay || now.getDate()));
+}
+
+function isLogActive(logDate, today = new Date()) {
+  const expiryMonthOffset = logDate.getDate() >= 25 ? 2 : 1;
+  const expiresAt = new Date(logDate.getFullYear(), logDate.getMonth() + expiryMonthOffset, 1);
+  return today < expiresAt;
+}
+
+function normalizeLog(log, fallbackDay) {
+  const logDate = parseLogDate(log, fallbackDay);
+  const dateKey = formatDateKey(logDate);
+  return {
+    ...log,
+    date: log.date || dateKey,
+    earnedDay: log.earnedDay || logDate.getDate(),
+    createdAt: log.createdAt || new Date().toISOString()
+  };
+}
+
+function normalizeLogs(logs = {}) {
+  return Object.keys(logs).reduce((nextLogs, day) => {
+    nextLogs[day] = (logs[day] || []).map((log) => normalizeLog(log, day));
+    return nextLogs;
+  }, {});
+}
+
+function calculateCoins(people, logs) {
+  const today = new Date();
+  const totals = people.reduce((result, person) => {
+    result[person.name] = 0;
+    return result;
+  }, {});
+
+  Object.keys(logs || {}).forEach((day) => {
+    (logs[day] || []).forEach((log) => {
+      const logDate = parseLogDate(log, day);
+      if (!isLogActive(logDate, today)) return;
+      if (!Object.prototype.hasOwnProperty.call(totals, log.person)) return;
+      totals[log.person] += Number(log.delta || 0);
+    });
+  });
+
+  return people.map((person) => ({
+    ...person,
+    coins: totals[person.name] || 0
+  }));
+}
+
 function request(path, method = "GET", data = undefined) {
   const app = getApp();
   return new Promise((resolve, reject) => {
@@ -85,20 +152,23 @@ function normalizeState(state = DEFAULT_STATE) {
     )
   ];
 
+  const logs = normalizeLogs(state.logs || {});
+  const people = remotePeople.map((person) => ({
+    ...person,
+    image: normalizeAssetPath(person.image || PERSON_IMAGE_BY_NAME[person.name])
+  }));
+
   return {
     ...DEFAULT_STATE,
     ...state,
-    people: remotePeople.map((person) => ({
-      ...person,
-      image: normalizeAssetPath(person.image || PERSON_IMAGE_BY_NAME[person.name])
-    })),
+    people: calculateCoins(people, logs),
     bears: mergedBears.map((bear) => ({
       ...bear,
       image: normalizeAssetPath(bear.image || BEAR_IMAGE_BY_NAME[bear.name]),
       active: bear.active !== false
     })),
     actions: state.actions || [],
-    logs: state.logs || {},
+    logs,
     rules: {
       ...DEFAULT_STATE.rules,
       ...(state.rules || {})
@@ -142,9 +212,10 @@ async function loadState() {
 }
 
 async function saveState(state) {
+  const safeState = normalizeState(state);
   await request("/api/state", "POST", {
     payload: {
-      ...state,
+      ...safeState,
       savedAt: new Date().toISOString(),
       source: "wechat-miniprogram"
     }
@@ -155,7 +226,9 @@ module.exports = {
   DEFAULT_STATE,
   addAction,
   drawBears,
+  formatDateKey,
   loadState,
   normalizeState,
+  normalizeLog,
   saveState
 };

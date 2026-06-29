@@ -24,15 +24,21 @@
     "list": [
       {
         "pagePath": "pages/bears/index",
-        "text": "小熊"
+        "text": "小熊",
+        "iconPath": "assets/tab-bear.png",
+        "selectedIconPath": "assets/tab-bear-active.png"
       },
       {
         "pagePath": "pages/calendar/index",
-        "text": "日历"
+        "text": "日历",
+        "iconPath": "assets/tab-calendar.png",
+        "selectedIconPath": "assets/tab-calendar-active.png"
       },
       {
         "pagePath": "pages/rules/index",
-        "text": "规则"
+        "text": "规则",
+        "iconPath": "assets/tab-rules.png",
+        "selectedIconPath": "assets/tab-rules-active.png"
       }
     ]
   },

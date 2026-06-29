@@ -1,4 +1,4 @@
-const { DEFAULT_STATE, addAction, loadState, normalizeState, saveState } = require("../../utils/state");
+const { DEFAULT_STATE, addAction, formatDateKey, loadState, normalizeState, saveState } = require("../../utils/state");
 
 Page({
   data: {
@@ -35,7 +35,8 @@ Page({
       ...(safeState.rules?.penalty || [])
     ].map((rule) => ({
       label: rule.label,
-      delta: Number(String(rule.value).match(/[-+]?\d+/)?.[0] || 0)
+      delta: Number(String(rule.value).match(/[-+]?\d+/)?.[0] || 0),
+      tone: Number(String(rule.value).match(/[-+]?\d+/)?.[0] || 0) < 0 ? "minus" : "plus"
     }));
     this.setData({
       dateText: this.formatDate(),
@@ -96,6 +97,7 @@ Page({
     const day = new Date().getDate();
     const label = event.currentTarget.dataset.label;
     const delta = Number(event.currentTarget.dataset.delta || 0);
+    const today = new Date();
     const state = { ...this.data.state };
     state.logs = state.logs || {};
     state.logs[day] = state.logs[day] || [];
@@ -103,14 +105,16 @@ Page({
       person: this.data.selectedPerson,
       type: label,
       detail: label,
-      delta
+      delta,
+      date: formatDateKey(today),
+      earnedDay: day,
+      createdAt: today.toISOString()
     });
-    const person = state.people.find((item) => item.name === this.data.selectedPerson);
-    if (person) person.coins += delta;
     state.actions = addAction(state, this.data.selectedPerson, "记录家务", label);
     try {
-      await saveState(state);
-      this.renderState(state);
+      const nextState = normalizeState(state);
+      await saveState(nextState);
+      this.renderState(nextState);
       wx.showToast({ title: "已记录", icon: "none" });
     } catch (error) {
       wx.showToast({ title: "保存失败", icon: "none" });

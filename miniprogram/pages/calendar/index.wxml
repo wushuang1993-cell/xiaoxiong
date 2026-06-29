@@ -33,13 +33,13 @@
   <view class="soft-card section">
     <text class="section-title">记录类型</text>
     <view class="tag-grid">
-      <button class="tag" wx:for="{{quickRules}}" wx:key="label" data-label="{{item.label}}" data-delta="{{item.delta}}" bindtap="addLog">{{item.label}}</button>
+      <button class="tag {{item.tone}}" wx:for="{{quickRules}}" wx:key="label" data-label="{{item.label}}" data-delta="{{item.delta}}" bindtap="addLog">{{item.label}}</button>
     </view>
   </view>
 
   <view class="soft-card section">
     <text class="section-title">{{selectedDay}} 日记录</text>
-    <view class="log-line" wx:for="{{todayLogs}}" wx:key="index">
+    <view class="log-line {{item.delta < 0 ? 'minus-log' : ''}}" wx:for="{{todayLogs}}" wx:key="index">
       <text>{{item.person}} · {{item.type}}</text>
       <text>{{item.delta > 0 ? '+' : ''}}{{item.delta}}</text>
     </view>

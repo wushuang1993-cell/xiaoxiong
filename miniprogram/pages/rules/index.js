@@ -7,6 +7,11 @@ const RULE_GROUPS = [
   { key: "drink", label: "饮品", title: "饮品" }
 ];
 
+const EMAIL_LOGIN_MAP = {
+  "shuang@xyyws.cn": "闪闪鱼",
+  "alan@xyyws.cn": "杰尼龟"
+};
+
 function amountToValue(amount) {
   const value = Number(amount || 0);
   return `${value > 0 ? "+" : ""}${value} 金币`;
@@ -26,6 +31,7 @@ Page({
     currentUser: "闪闪鱼",
     currentEmail: "",
     loginSummary: "闪闪鱼",
+    loginAvatar: "../../assets/shanshanyu.png",
     loginEmail: "",
     ruleGroups: RULE_GROUPS,
     editingRuleGroupIndex: 0,
@@ -38,13 +44,21 @@ Page({
 
   onShow() {
     const app = getApp();
+    const currentUser = app.globalData.currentUser || "闪闪鱼";
+    const currentEmail = app.globalData.currentEmail || "";
     this.setData({
-      currentUser: app.globalData.currentUser || "闪闪鱼",
-      currentEmail: app.globalData.currentEmail || "",
-      loginSummary: app.globalData.currentEmail ? `${app.globalData.currentUser} · ${app.globalData.currentEmail}` : app.globalData.currentUser || "闪闪鱼",
-      loginEmail: app.globalData.currentEmail || ""
+      currentUser,
+      currentEmail,
+      loginSummary: currentEmail ? `${currentUser}已登录` : "输入固定邮箱登录",
+      loginAvatar: this.avatarForUser(currentUser),
+      loginEmail: currentEmail
     });
     this.refresh();
+  },
+
+  avatarForUser(userName) {
+    const person = this.data.state.people.find((item) => item.name === userName);
+    return person?.image || (userName === "杰尼龟" ? "../../assets/jienigui.png" : "../../assets/shanshanyu.png");
   },
 
   async refresh() {
@@ -78,21 +92,25 @@ Page({
   },
 
   onEmailInput(event) {
-    this.setData({ loginEmail: event.detail.value.trim() });
+    const email = event.detail.value.trim().toLowerCase();
+    this.setData({ loginEmail: email });
+    if (EMAIL_LOGIN_MAP[email]) {
+      this.loginWithEmail(email);
+    }
   },
 
-  loginAs(event) {
-    const userName = event.currentTarget.dataset.user;
-    const email = this.data.loginEmail;
-    if (!email || !email.includes("@")) {
-      wx.showToast({ title: "请输入邮箱", icon: "none" });
-      return;
-    }
+  loginWithEmail(email) {
+    const userName = EMAIL_LOGIN_MAP[email];
     const app = getApp();
     app.globalData.currentUser = userName;
     app.globalData.currentEmail = email;
     wx.setStorageSync("bearAppLogin", { userName, email });
-    this.setData({ currentUser: userName, currentEmail: email, loginSummary: `${userName} · ${email}` });
+    this.setData({
+      currentUser: userName,
+      currentEmail: email,
+      loginSummary: `${userName}已登录`,
+      loginAvatar: this.avatarForUser(userName)
+    });
     wx.showToast({ title: `已登录${userName}`, icon: "none" });
   },
 

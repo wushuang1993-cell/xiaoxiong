@@ -128,12 +128,21 @@
   line-height: 58rpx;
 }
 
+.tag.minus {
+  background: #fae3e7;
+  color: #c86476;
+}
+
 .log-line {
   display: flex;
   justify-content: space-between;
   padding: 18rpx 0;
   border-bottom: 1rpx solid rgba(120, 98, 80, 0.1);
   font-size: 24rpx;
+}
+
+.minus-log {
+  color: #c86476;
 }
 
 .empty {

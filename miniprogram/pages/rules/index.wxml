@@ -6,16 +6,16 @@
 
   <view class="soft-card section">
     <view class="section-top">
-      <view>
+      <view class="login-title">
+        <image class="login-avatar" src="{{loginAvatar}}" mode="aspectFit" />
+        <view>
         <text class="section-title">固定邮箱登录</text>
         <text class="section-note">当前：{{loginSummary}}</text>
+        </view>
       </view>
     </view>
-    <input class="input" placeholder="输入固定邮箱" value="{{loginEmail}}" bindinput="onEmailInput" />
-    <view class="two-actions">
-      <button class="button" data-user="闪闪鱼" bindtap="loginAs">闪闪鱼登录</button>
-      <button class="button secondary" data-user="杰尼龟" bindtap="loginAs">杰尼龟登录</button>
-    </view>
+    <input class="input" placeholder="输入 shuang@xyyws.cn 或 alan@xyyws.cn" value="{{loginEmail}}" bindinput="onEmailInput" />
+    <text class="section-note">输入对应邮箱后会自动切换身份。</text>
   </view>
 
   <view class="soft-card section">
