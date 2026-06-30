@@ -32,6 +32,7 @@ Page({
     currentEmail: "",
     loginSummary: "闪闪鱼",
     loginAvatar: "../../assets/shanshanyu.png",
+    loginEmailText: "",
     loginEmail: "",
     ruleGroups: RULE_GROUPS,
     editingRuleGroupIndex: 0,
@@ -51,6 +52,7 @@ Page({
       currentEmail,
       loginSummary: currentEmail ? `${currentUser}已登录` : "输入固定邮箱登录",
       loginAvatar: this.avatarForUser(currentUser),
+      loginEmailText: currentEmail,
       loginEmail: currentEmail
     });
     this.refresh();
@@ -109,7 +111,8 @@ Page({
       currentUser: userName,
       currentEmail: email,
       loginSummary: `${userName}已登录`,
-      loginAvatar: this.avatarForUser(userName)
+      loginAvatar: this.avatarForUser(userName),
+      loginEmailText: email
     });
     wx.showToast({ title: `已登录${userName}`, icon: "none" });
   },

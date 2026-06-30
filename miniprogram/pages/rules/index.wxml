@@ -5,17 +5,18 @@
   </view>
 
   <view class="soft-card section">
-    <view class="section-top">
-      <view class="login-title">
+    <view class="login-panel">
+      <view class="login-profile">
         <image class="login-avatar" src="{{loginAvatar}}" mode="aspectFit" />
-        <view>
+        <text wx:if="{{loginEmailText}}" class="login-email">{{loginEmailText}}</text>
+      </view>
+      <view>
         <text class="section-title">固定邮箱登录</text>
         <text class="section-note">当前：{{loginSummary}}</text>
-        </view>
       </view>
     </view>
-    <input class="input" placeholder="输入 shuang@xyyws.cn 或 alan@xyyws.cn" value="{{loginEmail}}" bindinput="onEmailInput" />
-    <text class="section-note">输入对应邮箱后会自动切换身份。</text>
+    <input class="input" placeholder="请输入邮箱" value="{{loginEmail}}" bindinput="onEmailInput" />
+    <text class="section-note">输入绑定邮箱后会自动切换身份。</text>
   </view>
 
   <view class="soft-card section">

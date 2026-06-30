@@ -21,18 +21,36 @@
   margin-bottom: 18rpx;
 }
 
-.login-title {
+.login-panel {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16rpx;
+  margin-bottom: 18rpx;
+}
+
+.login-profile {
+  width: 128rpx;
+  flex: 0 0 128rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
 }
 
 .login-avatar {
   width: 64rpx;
   height: 64rpx;
-  flex: 0 0 auto;
   border-radius: 50%;
   background: #fff7ea;
+}
+
+.login-email {
+  max-width: 128rpx;
+  color: #9a8c81;
+  font-size: 18rpx;
+  line-height: 1.2;
+  text-align: center;
+  word-break: break-all;
 }
 
 .section-title {
