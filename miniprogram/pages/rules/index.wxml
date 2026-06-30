@@ -29,13 +29,12 @@
   <view class="soft-card section">
     <view class="section-top">
       <view>
-        <text class="section-title">规则设置</text>
-        <text class="section-note">支持自动恢复默认，也可以新增自定义规则。</text>
+        <text class="section-title">金币规则</text>
       </view>
-      <button class="small-button" bindtap="resetDefaultRules">自动设置</button>
+      <button class="small-button edit-toggle" bindtap="toggleRulesEditing">{{rulesEditing ? '完成' : '编辑'}}</button>
     </view>
 
-    <view class="rule-editor">
+    <view wx:if="{{rulesEditing}}" class="rule-editor">
       <picker mode="selector" range="{{ruleGroups}}" range-key="label" value="{{editingRuleGroupIndex}}" bindchange="onRuleGroupChange">
         <view class="picker-field">{{selectedRuleGroupLabel}}</view>
       </picker>
@@ -51,7 +50,7 @@
       <text>{{rule.label}}</text>
       <view class="rule-actions">
         <text class="{{rule.tone}}">{{rule.value}}</text>
-        <button class="delete-link" data-group="{{item.key}}" data-label="{{rule.label}}" bindtap="deleteRule">删</button>
+        <button wx:if="{{rulesEditing}}" class="delete-link" data-group="{{item.key}}" data-label="{{rule.label}}" bindtap="deleteRule">×</button>
       </view>
     </view>
   </view>

@@ -40,6 +40,18 @@
     <button class="button secondary" bindtap="requestExchange">申请兑换</button>
   </view>
 
+  <view wx:if="{{pendingNotice}}" class="pending-card soft-card">
+    <view>
+      <text class="pending-title">{{pendingNotice.title}}</text>
+      <text class="pending-detail">{{pendingNotice.detail}}</text>
+    </view>
+    <view wx:if="{{pendingNotice.mine}}" class="pending-status">等待对方同意</view>
+    <view wx:else class="pending-actions">
+      <button class="pending-button approve" bindtap="approvePending">同意</button>
+      <button class="pending-button reject" bindtap="rejectPending">拒绝</button>
+    </view>
+  </view>
+
   <view class="audit soft-card">
     <text class="muted">防作弊记录 · 每日记录</text>
     <view class="audit-line" wx:for="{{todayActions}}" wx:key="id">

@@ -41,6 +41,7 @@ Page({
     ruleName: "",
     ruleAmount: "",
     ruleSections: [],
+    rulesEditing: false,
     bearName: ""
   },
 
@@ -137,19 +138,8 @@ Page({
     wx.showToast({ title: "已退出", icon: "none" });
   },
 
-  resetDefaultRules() {
-    wx.showModal({
-      title: "自动设置规则",
-      content: "恢复默认基础家务、增值家务、扣分和饮品规则？",
-      success: (res) => {
-        if (!res.confirm) return;
-        const currentUser = getApp().globalData.currentUser || "闪闪鱼";
-        const nextState = normalizeState(this.data.state);
-        nextState.rules = normalizeState(DEFAULT_STATE).rules;
-        nextState.actions = addAction(nextState, currentUser, "自动设置规则", "恢复默认金币规则");
-        this.persist(nextState, "已恢复默认");
-      }
-    });
+  toggleRulesEditing() {
+    this.setData({ rulesEditing: !this.data.rulesEditing });
   },
 
   onRuleGroupChange(event) {
