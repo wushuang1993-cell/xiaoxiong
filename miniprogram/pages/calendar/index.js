@@ -5,6 +5,10 @@ Page({
     dateText: "",
     selectedPerson: "闪闪鱼",
     selectedDay: new Date().getDate(),
+    calendarYear: new Date().getFullYear(),
+    calendarMonth: new Date().getMonth(),
+    calendarMonthText: "",
+    touchStartX: 0,
     weekDays: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
     calendarDays: [],
     state: { people: [], logs: {}, rules: {} },
@@ -29,6 +33,8 @@ Page({
   renderState(state) {
     const safeState = normalizeState(state);
     const selectedDay = this.data.selectedDay || new Date().getDate();
+    const calendarYear = this.data.calendarYear;
+    const calendarMonth = this.data.calendarMonth;
     const quickRules = [
       ...(safeState.rules?.base || []),
       ...(safeState.rules?.bonus || []),
@@ -41,20 +47,22 @@ Page({
     this.setData({
       dateText: this.formatDate(),
       selectedDay,
-      calendarDays: this.buildCalendarDays(safeState, selectedDay),
+      calendarYear,
+      calendarMonth,
+      calendarMonthText: `${calendarYear}年${calendarMonth + 1}月`,
+      calendarDays: this.buildCalendarDays(safeState, selectedDay, calendarYear, calendarMonth),
       state: safeState,
-      todayLogs: safeState.logs?.[selectedDay] || [],
+      todayLogs: this.logsForDay(safeState, selectedDay, calendarYear, calendarMonth),
       quickRules
     });
   },
 
-  buildCalendarDays(state, selectedDay) {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
+  buildCalendarDays(state, selectedDay, year, month) {
     const firstDay = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
+    const now = new Date();
     const today = now.getDate();
+    const isCurrentMonth = now.getFullYear() === year && now.getMonth() === month;
     const days = [];
 
     for (let index = 0; index < firstDay; index += 1) {
@@ -65,13 +73,24 @@ Page({
       days.push({
         key: `day-${day}`,
         day,
-        isToday: day === today,
+        isToday: isCurrentMonth && day === today,
         isSelected: day === selectedDay,
-        hasLogs: Boolean(state.logs?.[day]?.length)
+        hasLogs: this.logsForDay(state, day, year, month).length > 0
       });
     }
 
     return days;
+  },
+
+  logsForDay(state, selectedDay, year, month) {
+    const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+    return Object.keys(state.logs || {}).reduce((items, day) => {
+      const logs = state.logs[day] || [];
+      logs.forEach((log) => {
+        if (log.date === dateKey) items.push(log);
+      });
+      return items;
+    }, []);
   },
 
   formatDate() {
@@ -91,6 +110,37 @@ Page({
     if (!selectedDay) return;
     this.setData({ selectedDay });
     this.renderState(this.data.state);
+  },
+
+  shiftMonth(offset) {
+    const nextDate = new Date(this.data.calendarYear, this.data.calendarMonth + offset, 1);
+    const today = new Date();
+    const isCurrentMonth = nextDate.getFullYear() === today.getFullYear() && nextDate.getMonth() === today.getMonth();
+    this.setData({
+      calendarYear: nextDate.getFullYear(),
+      calendarMonth: nextDate.getMonth(),
+      selectedDay: isCurrentMonth ? today.getDate() : 1
+    });
+    this.renderState(this.data.state);
+  },
+
+  prevMonth() {
+    this.shiftMonth(-1);
+  },
+
+  nextMonth() {
+    this.shiftMonth(1);
+  },
+
+  onCalendarTouchStart(event) {
+    this.setData({ touchStartX: event.touches?.[0]?.clientX || 0 });
+  },
+
+  onCalendarTouchEnd(event) {
+    const endX = event.changedTouches?.[0]?.clientX || 0;
+    const diff = endX - this.data.touchStartX;
+    if (Math.abs(diff) < 48) return;
+    this.shiftMonth(diff > 0 ? -1 : 1);
   },
 
   async addLog(event) {

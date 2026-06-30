@@ -75,6 +75,7 @@
   min-width: 58rpx;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.68);
   color: #d58f9f;
@@ -83,10 +84,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.wish-button::after {
-  border: 0;
 }
 
 .people-grid {

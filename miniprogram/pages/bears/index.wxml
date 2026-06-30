@@ -8,7 +8,7 @@
     <view class="hero-art">
       <image class="hero-bear" src="{{heroBear.image}}" mode="aspectFit" />
     </view>
-    <button class="wish-button" bindtap="openWishPicker">♡</button>
+    <view class="wish-button" bindtap="openWishPicker">♡</view>
   </view>
 
   <view class="people-grid">
@@ -42,9 +42,9 @@
 
   <view class="audit soft-card">
     <text class="muted">防作弊记录 · 每日记录</text>
-    <view class="audit-line" wx:for="{{state.actions}}" wx:key="id">
+    <view class="audit-line" wx:for="{{todayActions}}" wx:key="id">
       <text>{{item.time}} {{item.person}} {{item.action}} {{item.detail}}</text>
     </view>
-    <view wx:if="{{!state.actions.length}}" class="empty muted">今天还没有操作</view>
+    <view wx:if="{{!todayActions.length}}" class="empty muted">今天还没有操作</view>
   </view>
 </view>

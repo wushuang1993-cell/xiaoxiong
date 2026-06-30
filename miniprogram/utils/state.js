@@ -13,6 +13,7 @@ const DEFAULT_STATE = {
   ],
   draw: null,
   drawUsed: false,
+  todayId: "",
   actions: [],
   logs: {},
   rules: {
@@ -143,8 +144,10 @@ function normalizeAssetPath(path) {
 }
 
 function normalizeState(state = DEFAULT_STATE) {
+  const todayId = formatDateKey();
   const remotePeople = Array.isArray(state.people) && state.people.length ? state.people : DEFAULT_STATE.people;
   const remoteBears = Array.isArray(state.bears) && state.bears.length ? state.bears : DEFAULT_STATE.bears;
+  const isTodayState = !state.todayId || state.todayId === todayId;
   const mergedBears = [
     ...remoteBears,
     ...DEFAULT_STATE.bears.filter(
@@ -161,6 +164,11 @@ function normalizeState(state = DEFAULT_STATE) {
   return {
     ...DEFAULT_STATE,
     ...state,
+    todayId,
+    draw: isTodayState ? state.draw || null : null,
+    drawUsed: isTodayState ? Boolean(state.drawUsed && state.draw) : false,
+    pendingRedraw: isTodayState ? state.pendingRedraw || null : null,
+    pendingExchange: isTodayState ? state.pendingExchange || null : null,
     people: calculateCoins(people, logs),
     bears: mergedBears.map((bear) => ({
       ...bear,
@@ -197,6 +205,7 @@ function addAction(state, person, action, detail = "") {
   return [
     {
       id: `${Date.now()}`,
+      date: formatDateKey(),
       time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
       person,
       action,

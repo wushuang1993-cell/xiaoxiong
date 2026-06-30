@@ -12,7 +12,12 @@
     </view>
   </view>
 
-  <view class="soft-card calendar-card">
+  <view class="soft-card calendar-card" bindtouchstart="onCalendarTouchStart" bindtouchend="onCalendarTouchEnd">
+    <view class="calendar-top">
+      <view class="month-button" bindtap="prevMonth">‹</view>
+      <view class="month-title">{{calendarMonthText}}</view>
+      <view class="month-button" bindtap="nextMonth">›</view>
+    </view>
     <view class="week-row">
       <text wx:for="{{weekDays}}" wx:key="*this">{{item}}</text>
     </view>

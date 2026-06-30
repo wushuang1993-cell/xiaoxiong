@@ -38,6 +38,32 @@
   padding: 24rpx 22rpx;
 }
 
+.calendar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22rpx;
+}
+
+.month-title {
+  color: #4d3a32;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.month-button {
+  width: 54rpx;
+  height: 54rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f8f0e3;
+  color: #9b7b58;
+  font-size: 38rpx;
+  line-height: 1;
+}
+
 .week-row {
   display: flex;
   color: #a3958a;

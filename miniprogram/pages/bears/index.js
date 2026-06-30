@@ -1,4 +1,4 @@
-const { DEFAULT_STATE, addAction, drawBears, loadState, normalizeState, saveState } = require("../../utils/state");
+const { DEFAULT_STATE, addAction, drawBears, formatDateKey, loadState, normalizeState, saveState } = require("../../utils/state");
 
 Page({
   data: {
@@ -6,7 +6,8 @@ Page({
     state: DEFAULT_STATE,
     assignments: {},
     bearMap: {},
-    heroBear: {}
+    heroBear: {},
+    todayActions: []
   },
 
   onShow() {
@@ -31,12 +32,14 @@ Page({
       bearMap[bear.name] = bear;
     });
     const heroBear = safeState.bears[new Date().getDate() % safeState.bears.length] || safeState.bears[0] || {};
+    const todayId = formatDateKey();
     this.setData({
       dateText: this.formatDate(),
       state: safeState,
       assignments,
       bearMap,
-      heroBear
+      heroBear,
+      todayActions: (safeState.actions || []).filter((action) => action.date === todayId)
     });
   },
 
