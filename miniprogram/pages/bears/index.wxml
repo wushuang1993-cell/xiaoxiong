@@ -67,4 +67,19 @@
     </view>
     <view wx:if="{{!todayActions.length}}" class="empty muted">今天还没有操作</view>
   </view>
+
+  <view wx:if="{{showExchangePicker}}" class="picker-mask">
+    <view class="picker-sheet soft-card">
+      <view class="picker-top">
+        <text class="picker-title">选择想兑换的小熊</text>
+        <view class="picker-close" bindtap="closeExchangePicker">×</view>
+      </view>
+      <view class="picker-grid">
+        <view class="picker-bear" wx:for="{{exchangeChoices}}" wx:key="name" data-name="{{item.name}}" bindtap="chooseExchangeBear">
+          <image src="{{item.image}}" mode="aspectFit" />
+          <text>{{item.name}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
 </view>

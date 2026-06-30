@@ -26,7 +26,7 @@
     </view>
   </view>
 
-  <view class="soft-card section">
+  <view class="soft-card section rules-card">
     <view class="section-top">
       <view>
         <text class="section-title">金币规则</text>
@@ -42,15 +42,15 @@
       <input class="input" type="number" placeholder="金币，例如 1 或 -1" value="{{ruleAmount}}" bindinput="onRuleAmountInput" />
       <button class="button" bindtap="addRule">新增规则</button>
     </view>
-  </view>
 
-  <view class="soft-card section" wx:for="{{ruleSections}}" wx:key="key">
-    <text class="section-title">{{item.title}}</text>
-    <view class="rule-line" wx:for="{{item.rules}}" wx:for-item="rule" wx:key="label">
-      <text>{{rule.label}}</text>
-      <view class="rule-actions">
-        <text class="{{rule.tone}}">{{rule.value}}</text>
-        <view wx:if="{{rulesEditing}}" class="delete-link" data-group="{{item.key}}" data-label="{{rule.label}}" bindtap="deleteRule">×</view>
+    <view class="rule-section" wx:for="{{ruleSections}}" wx:key="key">
+      <text class="rule-section-title">{{item.title}}</text>
+      <view class="rule-line" wx:for="{{item.rules}}" wx:for-item="rule" wx:key="label">
+        <text class="rule-name">{{rule.label}}</text>
+        <view class="rule-actions">
+          <text class="rule-value {{rule.tone}}">{{rule.value}}</text>
+          <view wx:if="{{rulesEditing}}" class="delete-link" data-group="{{item.key}}" data-label="{{rule.label}}" bindtap="deleteRule">×</view>
+        </view>
       </view>
     </view>
   </view>

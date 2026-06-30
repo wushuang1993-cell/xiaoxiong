@@ -335,3 +335,74 @@
 .empty {
   margin-top: 12rpx;
 }
+
+.picker-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 28rpx;
+  background: rgba(72, 58, 48, 0.18);
+}
+
+.picker-sheet {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 28rpx;
+  background: linear-gradient(120deg, #fff3d8 0%, #f9e6ef 52%, #e9f5df 100%);
+}
+
+.picker-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.picker-title {
+  color: #4d3a32;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.picker-close {
+  width: 44rpx;
+  height: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  color: #9f7650;
+  font-size: 28rpx;
+  line-height: 1;
+}
+
+.picker-grid {
+  display: flex;
+  gap: 14rpx;
+  margin-top: 22rpx;
+}
+
+.picker-bear {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 16rpx 10rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.68);
+  text-align: center;
+  color: #5b4942;
+  font-size: 21rpx;
+}
+
+.picker-bear image {
+  width: 82rpx;
+  height: 72rpx;
+  display: block;
+  margin: 0 auto 10rpx;
+}

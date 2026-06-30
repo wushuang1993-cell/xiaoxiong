@@ -9,7 +9,9 @@ Page({
     heroBear: {},
     todayActions: [],
     currentUser: "闪闪鱼",
-    pendingNotice: null
+    pendingNotice: null,
+    exchangeChoices: [],
+    showExchangePicker: false
   },
 
   onShow() {
@@ -121,6 +123,11 @@ Page({
   requestRedraw() {
     const state = normalizeState(this.data.state);
     const currentUser = getApp().globalData.currentUser || "闪闪鱼";
+    const currentPerson = state.people.find((person) => person.name === currentUser);
+    if (!currentPerson || currentPerson.coins < 3) {
+      wx.showToast({ title: "金币不足，不能重抽", icon: "none" });
+      return;
+    }
     if (state.pendingRedraw || state.pendingExchange) {
       wx.showToast({ title: "已有待处理申请", icon: "none" });
       return;
@@ -133,6 +140,11 @@ Page({
   requestExchange() {
     const state = normalizeState(this.data.state);
     const currentUser = getApp().globalData.currentUser || "闪闪鱼";
+    const currentPerson = state.people.find((person) => person.name === currentUser);
+    if (!currentPerson || currentPerson.coins < 2) {
+      wx.showToast({ title: "金币不足，不能兑换", icon: "none" });
+      return;
+    }
     if (!state.drawUsed) {
       wx.showToast({ title: "请先抽签", icon: "none" });
       return;
@@ -147,17 +159,25 @@ Page({
       wx.showToast({ title: "暂无可兑换小熊", icon: "none" });
       return;
     }
-    wx.showActionSheet({
-      itemList: opponentBears,
-      success: (res) => {
-        const targetBear = opponentBears[res.tapIndex];
-        if (!targetBear) return;
-        const nextState = normalizeState(this.data.state);
-        nextState.pendingExchange = { applicant: currentUser, targetBear, date: formatDateKey() };
-        nextState.actions = addAction(nextState, currentUser, "申请兑换", targetBear);
-        this.persist(nextState, "已申请兑换");
-      }
+    this.setData({
+      exchangeChoices: opponentBears.map((name) => ({ name, image: state.bears.find((bear) => bear.name === name)?.image || "" })),
+      showExchangePicker: true
     });
+  },
+
+  closeExchangePicker() {
+    this.setData({ showExchangePicker: false, exchangeChoices: [] });
+  },
+
+  chooseExchangeBear(event) {
+    const targetBear = event.currentTarget.dataset.name;
+    if (!targetBear) return;
+    const currentUser = getApp().globalData.currentUser || "闪闪鱼";
+    const nextState = normalizeState(this.data.state);
+    nextState.pendingExchange = { applicant: currentUser, targetBear, date: formatDateKey() };
+    nextState.actions = addAction(nextState, currentUser, "申请兑换", targetBear);
+    this.setData({ showExchangePicker: false, exchangeChoices: [] });
+    this.persist(nextState, "已申请兑换");
   },
 
   approvePending() {
