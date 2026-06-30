@@ -30,6 +30,7 @@ Page({
     state: DEFAULT_STATE,
     currentUser: "闪闪鱼",
     currentEmail: "",
+    isLoggedIn: false,
     loginSummary: "闪闪鱼",
     loginAvatar: "../../assets/shanshanyu.png",
     loginEmailText: "",
@@ -50,6 +51,7 @@ Page({
     this.setData({
       currentUser,
       currentEmail,
+      isLoggedIn: Boolean(currentEmail),
       loginSummary: currentEmail ? `${currentUser}已登录` : "输入固定邮箱登录",
       loginAvatar: this.avatarForUser(currentUser),
       loginEmailText: currentEmail,
@@ -110,11 +112,29 @@ Page({
     this.setData({
       currentUser: userName,
       currentEmail: email,
+      isLoggedIn: true,
       loginSummary: `${userName}已登录`,
       loginAvatar: this.avatarForUser(userName),
       loginEmailText: email
     });
     wx.showToast({ title: `已登录${userName}`, icon: "none" });
+  },
+
+  logout() {
+    const app = getApp();
+    app.globalData.currentUser = "闪闪鱼";
+    app.globalData.currentEmail = "";
+    wx.removeStorageSync("bearAppLogin");
+    this.setData({
+      currentUser: "闪闪鱼",
+      currentEmail: "",
+      isLoggedIn: false,
+      loginSummary: "输入固定邮箱登录",
+      loginAvatar: "../../assets/shanshanyu.png",
+      loginEmailText: "",
+      loginEmail: ""
+    });
+    wx.showToast({ title: "已退出", icon: "none" });
   },
 
   resetDefaultRules() {

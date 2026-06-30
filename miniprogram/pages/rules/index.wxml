@@ -5,18 +5,25 @@
   </view>
 
   <view class="soft-card section">
-    <view class="login-panel">
+    <view wx:if="{{!isLoggedIn}}" class="login-form">
+      <text class="section-title">邮箱登录</text>
+      <input class="input" placeholder="请输入邮箱" value="{{loginEmail}}" bindinput="onEmailInput" />
+      <text class="section-note">请输入绑定邮箱后自动切换身份</text>
+    </view>
+
+    <view wx:else class="login-panel logged-in">
       <view class="login-profile">
         <image class="login-avatar" src="{{loginAvatar}}" mode="aspectFit" />
-        <text wx:if="{{loginEmailText}}" class="login-email">{{loginEmailText}}</text>
       </view>
-      <view>
-        <text class="section-title">固定邮箱登录</text>
-        <text class="section-note">当前：{{loginSummary}}</text>
+      <view class="login-detail">
+        <view class="login-name-row">
+          <text class="section-title">{{currentUser}}</text>
+          <text class="login-badge">已登录</text>
+        </view>
+        <text class="section-note">{{loginEmailText}}</text>
+        <button class="switch-account" bindtap="logout">切换账号</button>
       </view>
     </view>
-    <input class="input" placeholder="请输入邮箱" value="{{loginEmail}}" bindinput="onEmailInput" />
-    <text class="section-note">输入绑定邮箱后会自动切换身份。</text>
   </view>
 
   <view class="soft-card section">
