@@ -114,27 +114,46 @@ function calculateCoins(people, logs) {
   }));
 }
 
-function request(path, method = "GET", data = undefined) {
-  const app = getApp();
-  return new Promise((resolve, reject) => {
-    wx.request({
-      url: `${app.globalData.apiBaseUrl}${path}`,
-      method,
-      data,
-      timeout: 60000,
-      header: { "content-type": "application/json" },
-      success(res) {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve(res.data);
-        } else {
-          reject(new Error(res.data?.error || `请求失败 ${res.statusCode}`));
-        }
-      },
-      fail(error) {
-        reject(error);
-      }
-    });
+const STATE_CACHE_KEY = "xiaoxiongStateCache";
+
+function ensureCloudAvailable() {
+  if (!wx.cloud) {
+    throw new Error("当前基础库不支持云开发");
+  }
+}
+
+async function callStateFunction(action, payload) {
+  ensureCloudAvailable();
+  const result = await wx.cloud.callFunction({
+    name: "state",
+    data: {
+      action,
+      payload
+    }
   });
+
+  if (!result?.result?.ok) {
+    throw new Error(result?.result?.message || "小熊云函数返回异常");
+  }
+
+  return result.result;
+}
+
+function readCachedState() {
+  try {
+    return wx.getStorageSync(STATE_CACHE_KEY) || null;
+  } catch (error) {
+    console.warn("[小熊本地缓存读取失败]", error);
+    return null;
+  }
+}
+
+function cacheState(state) {
+  try {
+    wx.setStorageSync(STATE_CACHE_KEY, state);
+  } catch (error) {
+    console.warn("[小熊本地缓存保存失败]", error);
+  }
 }
 
 function normalizeAssetPath(path) {
@@ -188,15 +207,51 @@ function activeBears(state) {
   return (state.bears || []).filter((bear) => bear.active !== false).slice(0, 6);
 }
 
+function randomIndexByWeight(items, weightForItem) {
+  const weights = items.map((item) => Math.max(0, Number(weightForItem(item)) || 0));
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  let cursor = Math.random() * totalWeight;
+
+  for (let index = 0; index < items.length; index += 1) {
+    cursor -= weights[index];
+    if (cursor <= 0) return index;
+  }
+
+  return items.length - 1;
+}
+
+function shuffledPeople(people) {
+  return [...people].sort(() => Math.random() - 0.5);
+}
+
 function drawBears(state) {
-  const bears = activeBears(state).map((bear) => bear.name);
-  const midpoint = Math.ceil(bears.length / 2);
-  return {
-    seed: `wx-${Date.now()}`,
-    assignments: {
-      闪闪鱼: bears.slice(0, midpoint),
-      杰尼龟: bears.slice(midpoint)
+  const seed = `wx-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  const wishBoost = 1.12;
+  const remainingBears = activeBears(state).map((bear) => bear.name);
+  const people = shuffledPeople(state.people || DEFAULT_STATE.people);
+  const baseQuota = Math.floor(remainingBears.length / people.length);
+  const extraQuota = remainingBears.length % people.length;
+  const assignments = people.reduce((result, person) => {
+    result[person.name] = [];
+    return result;
+  }, {});
+
+  people.forEach((person, personIndex) => {
+    const quota = baseQuota + (personIndex < extraQuota ? 1 : 0);
+    for (let count = 0; count < quota && remainingBears.length; count += 1) {
+      const selectedIndex = randomIndexByWeight(remainingBears, (bearName) =>
+        bearName === person.wishBear ? wishBoost : 1
+      );
+      const [selectedBear] = remainingBears.splice(selectedIndex, 1);
+      assignments[person.name].push(selectedBear);
     }
+  });
+
+  return {
+    seed,
+    wishBoost,
+    rule: "weighted-random",
+    assignments
   };
 }
 
@@ -216,19 +271,47 @@ function addAction(state, person, action, detail = "") {
 }
 
 async function loadState() {
-  const data = await request("/api/state");
-  return normalizeState(data.payload || DEFAULT_STATE);
+  try {
+    const result = await callStateFunction("get");
+    const payload = result.payload;
+    if (!payload) {
+      const initialState = normalizeState(readCachedState() || DEFAULT_STATE);
+      await saveState(initialState);
+      return initialState;
+    }
+    const state = normalizeState(payload);
+    cacheState(state);
+    return state;
+  } catch (error) {
+    if (String(error?.errMsg || "").includes("does not exist")) {
+      await saveState(DEFAULT_STATE);
+      return normalizeState(DEFAULT_STATE);
+    }
+    const cachedState = readCachedState();
+    if (cachedState) {
+      console.warn("[小熊云数据库读取失败，已使用本地缓存]", error);
+      return normalizeState(cachedState);
+    }
+    console.warn("[小熊云数据库读取失败]", error);
+    throw error;
+  }
 }
 
 async function saveState(state) {
   const safeState = normalizeState(state);
-  await request("/api/state", "POST", {
-    payload: {
-      ...safeState,
-      savedAt: new Date().toISOString(),
-      source: "wechat-miniprogram"
-    }
-  });
+  const payload = {
+    ...safeState,
+    savedAt: new Date().toISOString(),
+    source: "wechat-cloud-function"
+  };
+
+  try {
+    cacheState(payload);
+    await callStateFunction("save", payload);
+  } catch (error) {
+    console.warn("[小熊云函数保存失败]", error);
+    throw error;
+  }
 }
 
 module.exports = {

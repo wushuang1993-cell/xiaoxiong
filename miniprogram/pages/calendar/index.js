@@ -25,7 +25,7 @@ Page({
       const state = await loadState();
       this.renderState(state);
     } catch (error) {
-      this.renderState(normalizeState(DEFAULT_STATE));
+      console.warn("[小熊读取失败]", error);
       wx.showToast({ title: "读取失败", icon: "none" });
     }
   },
@@ -167,6 +167,7 @@ Page({
       this.renderState(nextState);
       wx.showToast({ title: "已记录", icon: "none" });
     } catch (error) {
+      console.warn("[小熊保存失败]", error);
       wx.showToast({ title: "保存失败", icon: "none" });
     }
   }

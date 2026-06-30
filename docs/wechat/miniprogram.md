@@ -9,58 +9,67 @@
 - 小熊摇奖页：显示双方金币、今日抽签结果、防作弊操作记录。
 - 家务日历页：按人记录家务、增值家务和扣分。
 - 金币规则页：读取线上规则。
-- Vercel API：`api/state.js` 作为小程序和 Supabase 之间的桥接层。
+- 微信云函数：`state` 负责读写小熊 App 共享状态。
+- 微信云数据库：`app_states/main` 保存小熊 App 共享状态。
 
-## 为什么需要 Vercel API
+## 当前数据方案
 
-微信小程序不能直接复用网页的邮箱 Magic Link 登录流程。小程序端也不应该暴露 Supabase service role key。
-
-因此第一版小程序请求：
-
-```text
-https://xiaoxiong-opal.vercel.app/api/state
-```
-
-Vercel API 再使用服务端环境变量写入 Supabase `app_states`。
-
-## 你需要在 Vercel 增加的变量
-
-进入 Vercel 项目：
+小程序通过微信云函数读写微信云开发数据库：
 
 ```text
-Settings -> Environment Variables
+云函数：state
+集合：app_states
+文档：main
 ```
 
-保留已有变量：
+Vercel/Supabase 版本保留为历史方案，正式小程序优先使用微信云开发数据库，避免小程序请求外部 API 时出现不稳定的 `timeout`。
+小程序端不再直接写数据库，统一调用 `wx.cloud.callFunction({ name: "state" })`。
 
-```text
-VITE_SUPABASE_URL
-VITE_SUPABASE_PUBLISHABLE_KEY
-```
+## 当前抽签规则
 
-新增服务端变量：
-
-```text
-SUPABASE_SERVICE_ROLE_KEY
-```
-
-这个值在 Supabase 项目设置里找。它是服务端密钥，不能写进小程序，也不要发给别人。
-
-新增后需要重新部署 Vercel。
+- 每天只能直接抽签一次。
+- 参与分配的小熊来自小熊目录中已开启的小熊，最多 6 只。
+- 抽签时会随机决定两个人的抽取顺序，避免固定偏向某一方。
+- 每只小熊只会分配给一个人，不会重复。
+- 普通小熊权重一致。
+- 每个人自己的心愿小熊使用 `1.12` 权重，约等于 12% 的轻微偏向，符合 10%-15% 的心愿加权要求。
+- 双方选择同一只心愿小熊时，双方都会使用同样的心愿权重，不额外偏向某一个人。
+- 重新抽签仍然需要发起申请、对方同意，并扣除发起人的金币。
 
 ## 你需要在微信公众平台设置
 
-进入微信公众平台小程序后台：
+进入微信开发者工具的云开发控制台：
 
 ```text
-开发管理 -> 开发设置 -> 服务器域名
+数据库 -> 集合管理
 ```
 
-在 `request 合法域名` 增加：
+创建集合：
 
 ```text
-https://xiaoxiong-opal.vercel.app
+app_states
 ```
+
+权限第一版可以先保持当前可写设置以便调试。等云函数跑通后，建议改成“所有用户不可读写”，由云函数负责写入：
+
+```text
+{
+  "read": false,
+  "write": false
+}
+```
+
+当前使用微信云函数后，不再依赖 `request 合法域名` 访问 `/api/state`，也不再需要 Vercel API 作为小程序的数据入口。
+
+## 云函数部署
+
+第一次使用前，需要在微信开发者工具里部署云函数：
+
+1. 确认左侧文件树能看到 `cloudfunctions/state`。
+2. 右键 `state` 文件夹。
+3. 选择“上传并部署：云端安装依赖”。
+4. 等待上传完成后点击“编译”。
+5. 测试抽签、规则编辑或日历记录，确认 `app_states/main` 的 `updatedAt` 会更新。
 
 ## 微信开发者工具
 
@@ -71,14 +80,14 @@ https://xiaoxiong-opal.vercel.app
 /Users/wushuangmacmini/Desktop/小熊App/miniprogram
 ```
 
-3. 把 `project.config.json` 里的 `appid` 从 `touristappid` 改成你的小程序 AppID。
+3. 确认云开发环境 ID 为 `cloud1`。
 4. 点击编译。
 
 ## 后续正式版建议
 
-当前小程序第一版复用 Supabase `app_states` 共享状态。上线后建议继续升级为：
+当前小程序第一版使用微信云数据库单文档共享状态。上线后建议继续升级为：
 
 - 微信登录：使用 `wx.login` 换取 openid，并绑定闪闪鱼/杰尼龟身份。
-- 服务端权限：Vercel API 校验 openid 后才能写数据。
+- 服务端权限：用云函数校验 openid 后才能写数据。
 - 数据结构：从单一 `app_states` JSON 拆成抽签、金币流水、规则、成员、小熊目录等独立表。
 - 审计：抽签、重抽、兑换、同意操作全部写入不可编辑流水表。
