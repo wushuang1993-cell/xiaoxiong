@@ -41,14 +41,22 @@
   </view>
 
   <view wx:if="{{pendingNotice}}" class="pending-card soft-card">
-    <view>
-      <text class="pending-title">{{pendingNotice.title}}</text>
-      <text class="pending-detail">{{pendingNotice.detail}}</text>
+    <view class="pending-main">
+      <view class="pending-avatar-wrap">
+        <image class="pending-avatar" src="{{pendingNotice.applicantImage}}" mode="aspectFit" />
+      </view>
+      <view class="pending-copy">
+        <view class="pending-headline">
+          <text class="pending-title">{{pendingNotice.title}}</text>
+          <text class="pending-highlight">{{pendingNotice.applicant}}</text>
+        </view>
+        <text class="pending-detail">{{pendingNotice.detail}}</text>
+      </view>
     </view>
     <view wx:if="{{pendingNotice.mine}}" class="pending-status">等待对方同意</view>
     <view wx:else class="pending-actions">
-      <button class="pending-button approve" bindtap="approvePending">同意</button>
-      <button class="pending-button reject" bindtap="rejectPending">拒绝</button>
+      <view class="pending-button approve" bindtap="approvePending">同意</view>
+      <view class="pending-button reject" bindtap="rejectPending">拒绝</view>
     </view>
   </view>
 

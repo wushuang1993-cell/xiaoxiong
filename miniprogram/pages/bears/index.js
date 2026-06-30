@@ -49,10 +49,12 @@ Page({
   },
 
   pendingNoticeForUser(state, currentUser) {
+    const personImage = (name) => state.people.find((person) => person.name === name)?.image || "";
     if (state.pendingRedraw) {
       return {
         type: "redraw",
         applicant: state.pendingRedraw.applicant,
+        applicantImage: personImage(state.pendingRedraw.applicant),
         mine: state.pendingRedraw.applicant === currentUser,
         title: "重抽申请",
         detail: `${state.pendingRedraw.applicant} 申请重新抽签`
@@ -62,6 +64,7 @@ Page({
       return {
         type: "exchange",
         applicant: state.pendingExchange.applicant,
+        applicantImage: personImage(state.pendingExchange.applicant),
         targetBear: state.pendingExchange.targetBear,
         mine: state.pendingExchange.applicant === currentUser,
         title: "兑换申请",

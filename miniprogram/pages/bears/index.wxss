@@ -218,18 +218,61 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18rpx;
+  gap: 16rpx;
   margin-top: 22rpx;
-  padding: 22rpx 24rpx;
-  background: #fff8ee;
+  padding: 24rpx;
+  background: linear-gradient(120deg, #fde7ef 0%, #fff3d8 48%, #e9f5df 100%);
+}
+
+.pending-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.pending-avatar-wrap {
+  width: 76rpx;
+  height: 76rpx;
+  flex: 0 0 76rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.pending-avatar {
+  width: 66rpx;
+  height: 66rpx;
+}
+
+.pending-copy {
+  min-width: 0;
+}
+
+.pending-headline {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  flex-wrap: wrap;
 }
 
 .pending-title {
-  display: block;
   color: #5b4942;
   font-size: 25rpx;
   font-weight: 700;
   line-height: 1.25;
+}
+
+.pending-highlight {
+  padding: 5rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.72);
+  color: #9a6545;
+  font-size: 19rpx;
+  line-height: 1;
 }
 
 .pending-detail {
@@ -244,7 +287,7 @@
   flex: 0 0 auto;
   padding: 8rpx 14rpx;
   border-radius: 999rpx;
-  background: #f7ead5;
+  background: rgba(255, 255, 255, 0.68);
   color: #9b7650;
   font-size: 20rpx;
 }
@@ -256,7 +299,7 @@
 }
 
 .pending-button {
-  width: 72rpx;
+  width: 78rpx;
   height: 46rpx;
   margin: 0;
   padding: 0;
@@ -264,18 +307,15 @@
   color: #fff;
   font-size: 21rpx;
   line-height: 46rpx;
-}
-
-.pending-button::after {
-  border: 0;
+  text-align: center;
 }
 
 .pending-button.approve {
-  background: #82b58a;
+  background: #9f7650;
 }
 
 .pending-button.reject {
-  background: #d58f9f;
+  background: #c29a72;
 }
 
 .audit {

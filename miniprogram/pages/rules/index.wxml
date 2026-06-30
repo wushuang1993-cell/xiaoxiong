@@ -50,7 +50,7 @@
       <text>{{rule.label}}</text>
       <view class="rule-actions">
         <text class="{{rule.tone}}">{{rule.value}}</text>
-        <button wx:if="{{rulesEditing}}" class="delete-link" data-group="{{item.key}}" data-label="{{rule.label}}" bindtap="deleteRule">×</button>
+        <view wx:if="{{rulesEditing}}" class="delete-link" data-group="{{item.key}}" data-label="{{rule.label}}" bindtap="deleteRule">×</view>
       </view>
     </view>
   </view>
