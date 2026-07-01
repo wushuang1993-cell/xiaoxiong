@@ -8,6 +8,21 @@ const db = cloud.database();
 const STATE_COLLECTION = "app_states";
 const STATE_DOC_ID = "main";
 
+function cleanForCloud(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => cleanForCloud(item)).filter((item) => item !== undefined);
+  }
+  if (value && typeof value === "object") {
+    return Object.keys(value).reduce((result, key) => {
+      const cleanedValue = cleanForCloud(value[key]);
+      if (cleanedValue !== undefined) result[key] = cleanedValue;
+      return result;
+    }, {});
+  }
+  if (typeof value === "undefined" || typeof value === "function") return undefined;
+  return value;
+}
+
 async function getState() {
   try {
     const result = await db.collection(STATE_COLLECTION).doc(STATE_DOC_ID).get();
@@ -35,7 +50,7 @@ async function saveState(payload) {
 
   const wxContext = cloud.getWXContext();
   const data = {
-    payload,
+    payload: cleanForCloud(payload),
     updatedAt: db.serverDate(),
     updatedBy: wxContext.OPENID || ""
   };

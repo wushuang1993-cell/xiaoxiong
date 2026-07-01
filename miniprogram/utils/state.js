@@ -156,6 +156,21 @@ function cacheState(state) {
   }
 }
 
+function cleanForCloud(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => cleanForCloud(item)).filter((item) => item !== undefined);
+  }
+  if (value && typeof value === "object") {
+    return Object.keys(value).reduce((result, key) => {
+      const cleanedValue = cleanForCloud(value[key]);
+      if (cleanedValue !== undefined) result[key] = cleanedValue;
+      return result;
+    }, {});
+  }
+  if (typeof value === "undefined" || typeof value === "function") return undefined;
+  return value;
+}
+
 function normalizeAssetPath(path) {
   if (!path || path.startsWith("http") || path.startsWith("data:")) return path;
   if (path.startsWith("../../")) return path;
@@ -262,9 +277,9 @@ function addAction(state, person, action, detail = "") {
       id: `${Date.now()}`,
       date: formatDateKey(),
       time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
-      person,
+      person: person || "未登录",
       action,
-      detail
+      detail: detail || ""
     },
     ...actions
   ].slice(0, 80);
@@ -299,11 +314,11 @@ async function loadState() {
 
 async function saveState(state) {
   const safeState = normalizeState(state);
-  const payload = {
+  const payload = cleanForCloud({
     ...safeState,
     savedAt: new Date().toISOString(),
     source: "wechat-cloud-function"
-  };
+  });
 
   try {
     await callStateFunction("save", payload);

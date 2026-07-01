@@ -9,6 +9,7 @@ Page({
     heroBear: {},
     todayActions: [],
     currentUser: "闪闪鱼",
+    isLoggedIn: false,
     pendingNotice: null,
     exchangeChoices: [],
     showExchangePicker: false,
@@ -43,6 +44,7 @@ Page({
     const heroBear = safeState.bears[new Date().getDate() % safeState.bears.length] || safeState.bears[0] || {};
     const todayId = formatDateKey();
     const currentUser = getApp().globalData.currentUser || "闪闪鱼";
+    const isLoggedIn = Boolean(getApp().globalData.currentEmail);
     this.setData({
       dateText: this.formatDate(),
       state: safeState,
@@ -50,9 +52,17 @@ Page({
       bearMap,
       heroBear,
       currentUser,
+      isLoggedIn,
       pendingNotice: this.pendingNoticeForUser(safeState, currentUser),
       todayActions: (safeState.actions || []).filter((action) => action.date === todayId)
     });
+  },
+
+  requireLogin() {
+    if (getApp().globalData.currentEmail) return true;
+    wx.showToast({ title: "请先登录", icon: "none" });
+    wx.switchTab({ url: "/pages/rules/index" });
+    return false;
   },
 
   pendingNoticeForUser(state, currentUser) {
@@ -115,6 +125,7 @@ Page({
   },
 
   handleDraw() {
+    if (!this.requireLogin()) return;
     const state = { ...this.data.state };
     if (state.drawUsed) {
       wx.showToast({ title: "今天已经抽过", icon: "none" });
@@ -127,6 +138,7 @@ Page({
   },
 
   requestRedraw() {
+    if (!this.requireLogin()) return;
     const state = normalizeState(this.data.state);
     const currentUser = getApp().globalData.currentUser || "闪闪鱼";
     const currentPerson = state.people.find((person) => person.name === currentUser);
@@ -144,6 +156,7 @@ Page({
   },
 
   requestExchange() {
+    if (!this.requireLogin()) return;
     const state = normalizeState(this.data.state);
     const currentUser = getApp().globalData.currentUser || "闪闪鱼";
     const currentPerson = state.people.find((person) => person.name === currentUser);
@@ -179,6 +192,7 @@ Page({
   },
 
   chooseExchangeBear(event) {
+    if (!this.requireLogin()) return;
     const selectedBear = event.currentTarget.dataset.name;
     if (!selectedBear) return;
     if (this.data.exchangePickerMode === "approve") {
@@ -194,6 +208,7 @@ Page({
   },
 
   approvePending() {
+    if (!this.requireLogin()) return;
     const notice = this.data.pendingNotice;
     if (!notice || notice.mine) return;
     if (notice.type === "redraw") {
@@ -204,6 +219,7 @@ Page({
   },
 
   rejectPending() {
+    if (!this.requireLogin()) return;
     const notice = this.data.pendingNotice;
     if (!notice || notice.mine) return;
     const state = normalizeState(this.data.state);
@@ -268,6 +284,7 @@ Page({
   },
 
   openWishPicker() {
+    if (!this.requireLogin()) return;
     const state = normalizeState(this.data.state);
     const activeBears = state.bears.filter((bear) => bear.active !== false);
     this.setData({
