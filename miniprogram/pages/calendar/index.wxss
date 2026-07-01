@@ -150,17 +150,25 @@
 
 .tag-grid {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 12rpx;
   margin-top: 20rpx;
+}
+
+.tag-row {
+  display: flex;
+  gap: 12rpx;
+  min-width: 0;
 }
 
 .tag {
   box-sizing: border-box;
   width: auto;
   max-width: 100%;
+  min-width: 0;
+  flex: 0 1 auto;
   margin: 0;
-  padding: 0 20rpx;
+  padding: 0 18rpx;
   height: 58rpx;
   border-radius: 999rpx;
   background: #edf7f9;

@@ -39,7 +39,9 @@
       </view>
     </view>
     <view class="tag-grid">
-      <button class="tag {{item.tone}}" wx:for="{{quickRules}}" wx:key="label" data-label="{{item.label}}" data-delta="{{item.delta}}" bindtap="addLog">{{item.label}}</button>
+      <view class="tag-row" wx:for="{{quickRuleRows}}" wx:for-item="row" wx:key="*this">
+        <button class="tag {{item.tone}}" wx:for="{{row}}" wx:key="label" data-label="{{item.label}}" data-delta="{{item.delta}}" bindtap="addLog">{{item.label}}</button>
+      </view>
     </view>
   </view>
 
