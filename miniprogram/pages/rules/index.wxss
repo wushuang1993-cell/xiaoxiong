@@ -41,7 +41,8 @@
   min-width: 0;
 }
 
-.login-button {
+.login-button,
+.switch-account {
   flex: 0 0 132rpx;
   width: 132rpx;
   height: 78rpx;
@@ -55,7 +56,8 @@
   line-height: 78rpx;
 }
 
-.login-button::after {
+.login-button::after,
+.switch-account::after {
   border: 0;
 }
 
@@ -105,19 +107,9 @@
 }
 
 .switch-account {
-  width: 168rpx;
-  height: 56rpx;
-  margin: 18rpx 0 0 auto;
-  padding: 0;
-  border-radius: 999rpx;
   background: #f8f0e3;
   color: #7c6759;
-  font-size: 24rpx;
-  line-height: 56rpx;
-}
-
-.switch-account::after {
-  border: 0;
+  font-size: 23rpx;
 }
 
 .section-title {

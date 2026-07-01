@@ -24,8 +24,8 @@
           <text class="login-badge">已登录</text>
         </view>
         <text class="section-note">{{loginEmailText}}</text>
-        <button class="switch-account" bindtap="logout">切换账号</button>
       </view>
+      <button class="switch-account" bindtap="logout">切换账号</button>
     </view>
   </view>
 
