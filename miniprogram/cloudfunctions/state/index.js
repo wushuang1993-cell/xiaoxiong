@@ -26,10 +26,18 @@ function cleanForCloud(value) {
 async function getState() {
   try {
     const result = await db.collection(STATE_COLLECTION).doc(STATE_DOC_ID).get();
+    let payload = result.data && result.data.payload ? result.data.payload : null;
+    if (result.data && result.data.payloadJson) {
+      try {
+        payload = JSON.parse(result.data.payloadJson);
+      } catch (error) {
+        payload = result.data.payload || null;
+      }
+    }
     return {
       ok: true,
-      payload: result.data?.payload || null,
-      updatedAt: result.data?.updatedAt || null
+      payload,
+      updatedAt: result.data && result.data.updatedAt ? result.data.updatedAt : null
     };
   } catch (error) {
     if (String(error?.errMsg || "").includes("does not exist")) {
@@ -49,8 +57,16 @@ async function saveState(payload) {
   }
 
   const wxContext = cloud.getWXContext();
+  const safePayload = cleanForCloud(payload);
   const data = {
-    payload: cleanForCloud(payload),
+    payloadJson: JSON.stringify(safePayload),
+    payloadSummary: {
+      todayId: safePayload.todayId || "",
+      drawUsed: Boolean(safePayload.drawUsed),
+      peopleCount: Array.isArray(safePayload.people) ? safePayload.people.length : 0,
+      bearCount: Array.isArray(safePayload.bears) ? safePayload.bears.length : 0,
+      actionCount: Array.isArray(safePayload.actions) ? safePayload.actions.length : 0
+    },
     updatedAt: db.serverDate(),
     updatedBy: wxContext.OPENID || ""
   };
@@ -78,15 +94,22 @@ async function saveState(payload) {
 }
 
 exports.main = async (event = {}) => {
-  const action = event.action || "get";
+  try {
+    const action = event.action || "get";
 
-  if (action === "get") {
-    return getState();
+    if (action === "get") {
+      return getState();
+    }
+
+    if (action === "save") {
+      return saveState(event.payload);
+    }
+
+    throw new Error(`Unsupported state action: ${action}`);
+  } catch (error) {
+    return {
+      ok: false,
+      message: error.message || error.errMsg || "state cloud function failed"
+    };
   }
-
-  if (action === "save") {
-    return saveState(event.payload);
-  }
-
-  throw new Error(`Unsupported state action: ${action}`);
 };

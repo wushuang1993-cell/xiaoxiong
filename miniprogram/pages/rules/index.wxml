@@ -7,8 +7,11 @@
   <view class="soft-card section">
     <view wx:if="{{!isLoggedIn}}" class="login-form">
       <text class="section-title">邮箱登录</text>
-      <input class="input" placeholder="请输入邮箱" value="{{loginEmail}}" bindinput="onEmailInput" />
-      <text class="section-note">请输入绑定邮箱后自动切换身份</text>
+      <view class="login-input-row">
+        <input class="input login-input" placeholder="请输入邮箱" value="{{loginEmail}}" bindinput="onEmailInput" />
+        <button class="login-button" bindtap="submitLogin">登录</button>
+      </view>
+      <text class="section-note">请输入绑定邮箱后点击登录</text>
     </view>
 
     <view wx:else class="login-panel logged-in">

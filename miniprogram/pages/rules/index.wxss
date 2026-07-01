@@ -25,6 +25,40 @@
   display: block;
 }
 
+.login-input-row {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-top: 14rpx;
+}
+
+.login-input-row .input {
+  margin-top: 0;
+}
+
+.login-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.login-button {
+  flex: 0 0 132rpx;
+  width: 132rpx;
+  height: 78rpx;
+  margin: 0;
+  padding: 0;
+  border-radius: 999rpx;
+  background: #d99a49;
+  color: #fff;
+  font-size: 27rpx;
+  font-weight: 600;
+  line-height: 78rpx;
+}
+
+.login-button::after {
+  border: 0;
+}
+
 .login-panel {
   display: flex;
   align-items: flex-start;

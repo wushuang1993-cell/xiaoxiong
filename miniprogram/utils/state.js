@@ -133,7 +133,7 @@ async function callStateFunction(action, payload) {
   });
 
   if (!result?.result?.ok) {
-    throw new Error(result?.result?.message || "小熊云函数返回异常");
+    throw new Error(result?.result?.message || result?.errMsg || "小熊云函数返回异常");
   }
 
   return result.result;

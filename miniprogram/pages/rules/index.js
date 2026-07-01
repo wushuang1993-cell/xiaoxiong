@@ -100,9 +100,15 @@ Page({
   onEmailInput(event) {
     const email = event.detail.value.trim().toLowerCase();
     this.setData({ loginEmail: email });
-    if (EMAIL_LOGIN_MAP[email]) {
-      this.loginWithEmail(email);
+  },
+
+  submitLogin() {
+    const email = String(this.data.loginEmail || "").trim().toLowerCase();
+    if (!EMAIL_LOGIN_MAP[email]) {
+      wx.showToast({ title: "邮箱未绑定", icon: "none" });
+      return;
     }
+    this.loginWithEmail(email);
   },
 
   loginWithEmail(email) {
