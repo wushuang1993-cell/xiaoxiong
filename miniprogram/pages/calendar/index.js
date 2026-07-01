@@ -13,7 +13,8 @@ Page({
     calendarDays: [],
     state: { people: [], logs: {}, rules: {} },
     todayLogs: [],
-    quickRules: []
+    quickRules: [],
+    selectedDateTitle: ""
   },
 
   onShow() {
@@ -53,6 +54,7 @@ Page({
       calendarDays: this.buildCalendarDays(safeState, selectedDay, calendarYear, calendarMonth),
       state: safeState,
       todayLogs: this.logsForDay(safeState, selectedDay, calendarYear, calendarMonth),
+      selectedDateTitle: `${calendarMonth + 1}月${selectedDay}日记录`,
       quickRules
     });
   },

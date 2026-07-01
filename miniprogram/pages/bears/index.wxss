@@ -151,14 +151,14 @@
 .bear-row {
   display: flex;
   justify-content: center;
-  gap: 8rpx;
-  min-height: 120rpx;
-  margin-top: 22rpx;
+  gap: 10rpx;
+  min-height: 138rpx;
+  margin-top: 18rpx;
 }
 
 .mini-bear {
-  width: 74rpx;
-  min-height: 110rpx;
+  width: 82rpx;
+  min-height: 130rpx;
   box-sizing: border-box;
   padding: 8rpx 4rpx 10rpx;
   border-radius: 20rpx;
@@ -170,8 +170,8 @@
 }
 
 .mini-bear-art {
-  width: 60rpx;
-  height: 54rpx;
+  width: 74rpx;
+  height: 72rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -179,8 +179,8 @@
 }
 
 .mini-bear-art image {
-  width: 58rpx;
-  height: 52rpx;
+  width: 72rpx;
+  height: 68rpx;
 }
 
 .empty-bear {
@@ -332,7 +332,7 @@
 .audit-line {
   margin-top: 13rpx;
   color: #72645b;
-  font-size: 28rpx;
+  font-size: 25rpx;
   line-height: 1.45;
 }
 

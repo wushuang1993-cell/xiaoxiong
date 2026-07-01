@@ -43,7 +43,7 @@
   </view>
 
   <view class="soft-card section">
-    <text class="section-title">{{selectedDay}} 日记录</text>
+    <text class="section-title">{{selectedDateTitle}}</text>
     <view class="log-line {{item.delta < 0 ? 'minus-log' : ''}}" wx:for="{{todayLogs}}" wx:key="index">
       <text>{{item.person}} · {{item.type}}</text>
       <text>{{item.delta > 0 ? '+' : ''}}{{item.delta}}</text>
