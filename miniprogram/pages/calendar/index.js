@@ -14,7 +14,6 @@ Page({
     state: { people: [], logs: {}, rules: {} },
     todayLogs: [],
     quickRules: [],
-    quickRuleRows: [[], []],
     selectedDateTitle: ""
   },
 
@@ -56,14 +55,8 @@ Page({
       state: safeState,
       todayLogs: this.logsForDay(safeState, selectedDay, calendarYear, calendarMonth),
       selectedDateTitle: `${calendarMonth + 1}月${selectedDay}日记录`,
-      quickRules,
-      quickRuleRows: this.splitQuickRules(quickRules)
+      quickRules
     });
-  },
-
-  splitQuickRules(rules) {
-    const middle = Math.ceil((rules || []).length / 2);
-    return [(rules || []).slice(0, middle), (rules || []).slice(middle)];
   },
 
   buildCalendarDays(state, selectedDay, year, month) {

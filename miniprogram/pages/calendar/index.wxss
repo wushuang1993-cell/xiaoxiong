@@ -149,26 +149,18 @@
 }
 
 .tag-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12rpx;
   margin-top: 20rpx;
 }
 
-.tag-row {
-  display: flex;
-  gap: 12rpx;
-  min-width: 0;
-}
-
 .tag {
   box-sizing: border-box;
-  width: auto;
-  max-width: 100%;
+  width: 100%;
   min-width: 0;
-  flex: 0 1 auto;
   margin: 0;
-  padding: 0 18rpx;
+  padding: 0 16rpx;
   height: 58rpx;
   border-radius: 999rpx;
   background: #edf7f9;
