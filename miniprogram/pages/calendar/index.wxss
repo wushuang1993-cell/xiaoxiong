@@ -4,7 +4,7 @@
 
 .title {
   margin-top: 10rpx;
-  font-size: 44rpx;
+  font-size: 48rpx;
   font-weight: 800;
 }
 
@@ -18,10 +18,10 @@
   display: flex;
   align-items: center;
   gap: 12rpx;
-  padding: 16rpx;
+  padding: 18rpx;
   border-radius: 28rpx;
   background: #fffaf1;
-  font-size: 25rpx;
+  font-size: 27rpx;
 }
 
 .person-pill.active {
@@ -35,8 +35,8 @@
 }
 
 .calendar-card {
-  margin-top: 22rpx;
-  padding: 24rpx 22rpx;
+  margin-top: 24rpx;
+  padding: 28rpx 24rpx;
 }
 
 .calendar-top {
@@ -48,7 +48,7 @@
 
 .month-title {
   color: #4d3a32;
-  font-size: 31rpx;
+  font-size: 34rpx;
   font-weight: 700;
 }
 
@@ -68,7 +68,7 @@
 .week-row {
   display: flex;
   color: #a3958a;
-  font-size: 23rpx;
+  font-size: 25rpx;
   line-height: 1;
 }
 
@@ -87,21 +87,21 @@
   position: relative;
   box-sizing: border-box;
   width: 14.285%;
-  height: 62rpx;
+  height: 68rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   color: #6a554c;
-  font-size: 25rpx;
+  font-size: 27rpx;
 }
 
 .day-cell text {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 46rpx;
-  height: 46rpx;
+  width: 50rpx;
+  height: 50rpx;
   border-radius: 18rpx;
 }
 
@@ -128,31 +128,41 @@
 }
 
 .section {
-  margin-top: 22rpx;
-  padding: 26rpx;
+  margin-top: 24rpx;
+  padding: 28rpx;
 }
 
 .section-title {
-  font-size: 31rpx;
+  font-size: 34rpx;
   font-weight: 700;
 }
 
 .tag-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14rpx;
-  margin-top: 18rpx;
+  margin-top: 20rpx;
 }
 
 .tag {
+  box-sizing: border-box;
+  width: 100%;
   margin: 0;
-  padding: 0 22rpx;
-  height: 64rpx;
-  border-radius: 999rpx;
+  padding: 0 18rpx;
+  height: 76rpx;
+  border-radius: 24rpx;
   background: #edf7f9;
   color: #5b6c70;
-  font-size: 26rpx;
-  line-height: 64rpx;
+  font-size: 28rpx;
+  line-height: 76rpx;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag::after {
+  border: 0;
 }
 
 .tag.minus {
@@ -163,9 +173,9 @@
 .log-line {
   display: flex;
   justify-content: space-between;
-  padding: 18rpx 0;
+  padding: 20rpx 0;
   border-bottom: 1rpx solid rgba(120, 98, 80, 0.1);
-  font-size: 27rpx;
+  font-size: 30rpx;
 }
 
 .minus-log {

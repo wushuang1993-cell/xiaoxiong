@@ -155,11 +155,11 @@ Page({
   },
 
   onRuleNameInput(event) {
-    this.setData({ ruleName: event.detail.value });
+    this.setData({ ruleName: String(event.detail.value || "").slice(0, 10) });
   },
 
   onRuleAmountInput(event) {
-    const value = String(event.detail.value || "").replace(/[^\d-]/g, "").replace(/(?!^)-/g, "");
+    const value = String(event.detail.value || "").replace(/[^\d-]/g, "").replace(/(?!^)-/g, "").slice(0, 3);
     this.setData({ ruleAmount: value });
   },
 

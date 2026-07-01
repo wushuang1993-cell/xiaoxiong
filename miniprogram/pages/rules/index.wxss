@@ -4,13 +4,13 @@
 
 .title {
   margin-top: 10rpx;
-  font-size: 44rpx;
+  font-size: 48rpx;
   font-weight: 800;
 }
 
 .section {
-  margin-top: 22rpx;
-  padding: 26rpx;
+  margin-top: 24rpx;
+  padding: 30rpx;
 }
 
 .section-top {
@@ -43,17 +43,17 @@
 
 .login-button,
 .switch-account {
-  flex: 0 0 132rpx;
-  width: 132rpx;
-  height: 78rpx;
+  flex: 0 0 146rpx;
+  width: 146rpx;
+  height: 84rpx;
   margin: 0;
   padding: 0;
   border-radius: 999rpx;
   background: #d99a49;
   color: #fff;
-  font-size: 27rpx;
+  font-size: 29rpx;
   font-weight: 600;
-  line-height: 78rpx;
+  line-height: 84rpx;
 }
 
 .login-button::after,
@@ -98,24 +98,24 @@
 }
 
 .login-badge {
-  padding: 6rpx 14rpx;
+  padding: 7rpx 16rpx;
   border-radius: 999rpx;
   background: #e3f0dc;
   color: #6a9d70;
-  font-size: 22rpx;
+  font-size: 24rpx;
   line-height: 1;
 }
 
 .switch-account {
   background: #f8f0e3;
   color: #7c6759;
-  font-size: 23rpx;
+  font-size: 25rpx;
 }
 
 .section-title {
   display: block;
   color: #4d3a32;
-  font-size: 31rpx;
+  font-size: 34rpx;
   font-weight: 700;
   line-height: 1.25;
 }
@@ -124,20 +124,20 @@
   display: block;
   margin-top: 8rpx;
   color: #9a8c81;
-  font-size: 24rpx;
+  font-size: 26rpx;
   line-height: 1.35;
 }
 
 .input {
   box-sizing: border-box;
   width: 100%;
-  min-height: 78rpx;
+  min-height: 84rpx;
   margin-top: 14rpx;
-  padding: 0 22rpx;
+  padding: 0 24rpx;
   border-radius: 20rpx;
   background: #f8f0e3;
   color: #4d3a32;
-  font-size: 27rpx;
+  font-size: 29rpx;
 }
 
 .two-actions {
@@ -154,15 +154,15 @@
 
 .small-button {
   flex: 0 0 auto;
-  min-width: 168rpx;
-  height: 56rpx;
+  min-width: 176rpx;
+  height: 64rpx;
   margin: 0;
   padding: 0 18rpx;
   border-radius: 999rpx;
   background: #ffe6b9;
   color: #8a6130;
-  font-size: 24rpx;
-  line-height: 56rpx;
+  font-size: 27rpx;
+  line-height: 64rpx;
 }
 
 .small-button::after,
@@ -179,12 +179,12 @@
 
 .picker-field {
   box-sizing: border-box;
-  min-height: 78rpx;
-  padding: 23rpx 22rpx;
+  min-height: 84rpx;
+  padding: 25rpx 24rpx;
   border-radius: 20rpx;
   background: #edf7f1;
   color: #5c7161;
-  font-size: 27rpx;
+  font-size: 29rpx;
 }
 
 .rule-section {
@@ -196,7 +196,7 @@
 .rule-section-title {
   display: block;
   color: #9a7651;
-  font-size: 24rpx;
+  font-size: 26rpx;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -206,14 +206,19 @@
   align-items: center;
   justify-content: space-between;
   gap: 16rpx;
-  padding: 13rpx 0;
+  padding: 16rpx 0;
   color: #5b4942;
 }
 
 .rule-name {
+  flex: 1;
+  min-width: 0;
   color: #5b4942;
-  font-size: 26rpx;
+  font-size: 29rpx;
   line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rule-actions {
@@ -224,7 +229,7 @@
 }
 
 .rule-value {
-  font-size: 24rpx;
+  font-size: 27rpx;
 }
 
 .plus {
@@ -236,9 +241,9 @@
 }
 
 .delete-link {
-  width: 38rpx;
-  height: 38rpx;
-  flex: 0 0 38rpx;
+  width: 44rpx;
+  height: 44rpx;
+  flex: 0 0 44rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -247,7 +252,7 @@
   border-radius: 50%;
   background: #fae3e7;
   color: #c76578;
-  font-size: 24rpx;
+  font-size: 27rpx;
   line-height: 1;
 }
 
@@ -264,8 +269,8 @@
 
 .bear-editor .button {
   flex: 0 0 180rpx;
-  height: 78rpx;
-  font-size: 27rpx;
+  height: 84rpx;
+  font-size: 29rpx;
 }
 
 .bear-line {
@@ -281,7 +286,7 @@
   align-items: center;
   gap: 14rpx;
   color: #5b4942;
-  font-size: 27rpx;
+  font-size: 29rpx;
 }
 
 .bear-name image {

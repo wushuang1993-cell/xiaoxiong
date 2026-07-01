@@ -21,7 +21,7 @@
 
 .title {
   margin-top: 14rpx;
-  font-size: 46rpx;
+  font-size: 50rpx;
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: 0;
@@ -34,7 +34,7 @@
   border-radius: 999rpx;
   background: rgba(214, 154, 73, 0.18);
   color: #7a5834;
-  font-size: 23rpx;
+  font-size: 26rpx;
   line-height: 1;
 }
 
@@ -135,7 +135,7 @@
 .name {
   display: block;
   color: #6d5147;
-  font-size: 24rpx;
+  font-size: 27rpx;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -144,7 +144,7 @@
   display: block;
   margin-top: 6rpx;
   color: #8b7c73;
-  font-size: 21rpx;
+  font-size: 24rpx;
   line-height: 1.2;
 }
 
@@ -165,7 +165,7 @@
   background: rgba(255, 255, 255, 0.72);
   text-align: center;
   color: #5b4942;
-  font-size: 18rpx;
+  font-size: 22rpx;
   line-height: 1.2;
 }
 
@@ -192,7 +192,7 @@
   border-radius: 22rpx;
   background: rgba(255, 255, 255, 0.42);
   color: #9b8b82;
-  font-size: 22rpx;
+  font-size: 25rpx;
 }
 
 .draw-button {
@@ -265,7 +265,7 @@
 
 .pending-title {
   color: #5b4942;
-  font-size: 28rpx;
+  font-size: 31rpx;
   font-weight: 700;
   line-height: 1.25;
 }
@@ -275,7 +275,7 @@
   border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.72);
   color: #9a6545;
-  font-size: 22rpx;
+  font-size: 24rpx;
   line-height: 1;
 }
 
@@ -283,7 +283,7 @@
   display: block;
   margin-top: 8rpx;
   color: #8b7c73;
-  font-size: 24rpx;
+  font-size: 27rpx;
   line-height: 1.35;
 }
 
@@ -293,7 +293,7 @@
   border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.68);
   color: #9b7650;
-  font-size: 23rpx;
+  font-size: 25rpx;
 }
 
 .pending-actions {
@@ -303,14 +303,14 @@
 }
 
 .pending-button {
-  width: 92rpx;
-  height: 54rpx;
+  width: 100rpx;
+  height: 60rpx;
   margin: 0;
   padding: 0;
   border-radius: 999rpx;
   color: #fff;
-  font-size: 24rpx;
-  line-height: 54rpx;
+  font-size: 27rpx;
+  line-height: 60rpx;
   text-align: center;
 }
 
@@ -332,7 +332,7 @@
 .audit-line {
   margin-top: 13rpx;
   color: #72645b;
-  font-size: 25rpx;
+  font-size: 28rpx;
   line-height: 1.45;
 }
 
@@ -369,7 +369,7 @@
 
 .picker-title {
   color: #4d3a32;
-  font-size: 31rpx;
+  font-size: 34rpx;
   font-weight: 700;
 }
 
@@ -382,7 +382,7 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.72);
   color: #9f7650;
-  font-size: 28rpx;
+  font-size: 31rpx;
   line-height: 1;
 }
 
@@ -405,7 +405,7 @@
   background: rgba(255, 255, 255, 0.68);
   text-align: center;
   color: #5b4942;
-  font-size: 24rpx;
+  font-size: 27rpx;
 }
 
 .picker-bear.active {

@@ -41,8 +41,8 @@
       <picker mode="selector" range="{{ruleGroups}}" range-key="label" value="{{editingRuleGroupIndex}}" bindchange="onRuleGroupChange">
         <view class="picker-field">{{selectedRuleGroupLabel}}</view>
       </picker>
-      <input class="input" placeholder="规则名称，例如 买菜" value="{{ruleName}}" bindinput="onRuleNameInput" />
-      <input class="input" type="text" placeholder="金币，例如 1 或 -1" value="{{ruleAmount}}" bindinput="onRuleAmountInput" />
+      <input class="input" maxlength="10" placeholder="规则名称，最多 10 字" value="{{ruleName}}" bindinput="onRuleNameInput" />
+      <input class="input" type="text" maxlength="3" placeholder="金币，例如 1 或 -1" value="{{ruleAmount}}" bindinput="onRuleAmountInput" />
       <button class="button" bindtap="addRule">新增规则</button>
     </view>
 
