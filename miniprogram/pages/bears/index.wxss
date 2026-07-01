@@ -40,10 +40,10 @@
 
 .hero-art {
   position: absolute;
-  right: 18rpx;
-  bottom: 10rpx;
-  width: 210rpx;
-  height: 190rpx;
+  right: 8rpx;
+  bottom: 0;
+  width: 258rpx;
+  height: 218rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -52,8 +52,8 @@
 .hero-art::before {
   content: "";
   position: absolute;
-  width: 170rpx;
-  height: 170rpx;
+  width: 202rpx;
+  height: 202rpx;
   border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.42);
 }
@@ -61,8 +61,8 @@
 .hero-bear {
   position: relative;
   z-index: 1;
-  width: 198rpx;
-  height: 166rpx;
+  width: 244rpx;
+  height: 204rpx;
 }
 
 .wish-button {

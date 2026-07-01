@@ -4,14 +4,6 @@
     <view class="title">家务日历</view>
   </view>
 
-  <view class="person-switch">
-    <view class="person-pill {{selectedPerson === item.name ? 'active' : ''}}" wx:for="{{state.people}}" wx:key="name" data-name="{{item.name}}" bindtap="selectPerson">
-      <image src="{{item.image}}" mode="aspectFit" />
-      <text>{{item.name}}</text>
-      <text class="muted">{{item.coins}} 金币</text>
-    </view>
-  </view>
-
   <view class="soft-card calendar-card" bindtouchstart="onCalendarTouchStart" bindtouchend="onCalendarTouchEnd">
     <view class="calendar-top">
       <view class="month-button" bindtap="prevMonth">‹</view>
@@ -37,12 +29,21 @@
 
   <view class="soft-card section">
     <text class="section-title">记录类型</text>
+    <view class="person-switch in-records">
+      <view class="person-pill {{selectedPerson === item.name ? 'active' : ''}}" wx:for="{{state.people}}" wx:key="name" data-name="{{item.name}}" bindtap="selectPerson">
+        <image src="{{item.image}}" mode="aspectFit" />
+        <view class="person-pill-copy">
+          <text>{{item.name}}</text>
+          <text class="muted">{{item.coins}} 金币</text>
+        </view>
+      </view>
+    </view>
     <view class="tag-grid">
       <button class="tag {{item.tone}}" wx:for="{{quickRules}}" wx:key="label" data-label="{{item.label}}" data-delta="{{item.delta}}" bindtap="addLog">{{item.label}}</button>
     </view>
   </view>
 
-  <view class="soft-card section">
+  <view class="soft-card section record-card">
     <text class="section-title">{{selectedDateTitle}}</text>
     <view class="log-line {{item.delta < 0 ? 'minus-log' : ''}}" wx:for="{{todayLogs}}" wx:key="index">
       <text>{{item.person}} · {{item.type}}</text>

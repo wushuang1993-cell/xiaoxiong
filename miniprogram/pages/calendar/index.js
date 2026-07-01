@@ -3,7 +3,7 @@ const { DEFAULT_STATE, addAction, formatDateKey, loadState, normalizeState, save
 Page({
   data: {
     dateText: "",
-    selectedPerson: "闪闪鱼",
+    selectedPerson: "",
     selectedDay: new Date().getDate(),
     calendarYear: new Date().getFullYear(),
     calendarMonth: new Date().getMonth(),
@@ -146,6 +146,10 @@ Page({
   },
 
   async addLog(event) {
+    if (!this.data.selectedPerson) {
+      wx.showToast({ title: "请先选择人物", icon: "none" });
+      return;
+    }
     const day = new Date().getDate();
     const label = event.currentTarget.dataset.label;
     const delta = Number(event.currentTarget.dataset.delta || 0);
