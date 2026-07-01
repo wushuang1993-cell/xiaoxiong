@@ -151,22 +151,26 @@
 .tag-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12rpx;
+  gap: 12rpx 14rpx;
   margin-top: 20rpx;
+  padding: 0 18rpx;
 }
 
 .tag {
   box-sizing: border-box;
-  width: 100%;
+  display: inline-block;
+  justify-self: center;
+  width: auto;
+  max-width: 100%;
   min-width: 0;
   margin: 0;
-  padding: 0 16rpx;
-  height: 58rpx;
+  padding: 0 14rpx;
+  height: 56rpx;
   border-radius: 999rpx;
   background: #edf7f9;
   color: #5b6c70;
-  font-size: 24rpx;
-  line-height: 58rpx;
+  font-size: 23rpx;
+  line-height: 56rpx;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
