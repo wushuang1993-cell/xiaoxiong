@@ -306,8 +306,8 @@ async function saveState(state) {
   };
 
   try {
-    cacheState(payload);
     await callStateFunction("save", payload);
+    cacheState(payload);
   } catch (error) {
     console.warn("[小熊云函数保存失败]", error);
     throw error;

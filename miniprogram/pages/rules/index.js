@@ -153,13 +153,15 @@ Page({
   },
 
   onRuleAmountInput(event) {
-    this.setData({ ruleAmount: event.detail.value });
+    const value = String(event.detail.value || "").replace(/[^\d-]/g, "").replace(/(?!^)-/g, "");
+    this.setData({ ruleAmount: value });
   },
 
   addRule() {
     const name = this.data.ruleName.trim();
-    const amount = Number(this.data.ruleAmount);
-    if (!name || Number.isNaN(amount)) {
+    const amountText = String(this.data.ruleAmount).trim();
+    const amount = Number(amountText);
+    if (!name || !/^-?\d+$/.test(amountText) || amount === 0) {
       wx.showToast({ title: "填写名称和金币", icon: "none" });
       return;
     }

@@ -32,7 +32,7 @@
 }
 
 .login-panel.logged-in {
-  align-items: center;
+  align-items: flex-start;
 }
 
 .login-profile {
@@ -44,8 +44,8 @@
 }
 
 .login-avatar {
-  width: 76rpx;
-  height: 76rpx;
+  width: 82rpx;
+  height: 82rpx;
   border-radius: 50%;
   background: #fff7ea;
 }
@@ -62,24 +62,24 @@
 }
 
 .login-badge {
-  padding: 5rpx 12rpx;
+  padding: 6rpx 14rpx;
   border-radius: 999rpx;
   background: #e3f0dc;
   color: #6a9d70;
-  font-size: 19rpx;
+  font-size: 22rpx;
   line-height: 1;
 }
 
 .switch-account {
-  width: 148rpx;
-  height: 48rpx;
-  margin: 16rpx auto 0 0;
+  width: 168rpx;
+  height: 56rpx;
+  margin: 18rpx 0 0 auto;
   padding: 0;
   border-radius: 999rpx;
   background: #f8f0e3;
   color: #7c6759;
-  font-size: 21rpx;
-  line-height: 48rpx;
+  font-size: 24rpx;
+  line-height: 56rpx;
 }
 
 .switch-account::after {
@@ -89,7 +89,7 @@
 .section-title {
   display: block;
   color: #4d3a32;
-  font-size: 28rpx;
+  font-size: 31rpx;
   font-weight: 700;
   line-height: 1.25;
 }
@@ -98,20 +98,20 @@
   display: block;
   margin-top: 8rpx;
   color: #9a8c81;
-  font-size: 21rpx;
+  font-size: 24rpx;
   line-height: 1.35;
 }
 
 .input {
   box-sizing: border-box;
   width: 100%;
-  min-height: 70rpx;
+  min-height: 78rpx;
   margin-top: 14rpx;
   padding: 0 22rpx;
   border-radius: 20rpx;
   background: #f8f0e3;
   color: #4d3a32;
-  font-size: 24rpx;
+  font-size: 27rpx;
 }
 
 .two-actions {
@@ -128,15 +128,15 @@
 
 .small-button {
   flex: 0 0 auto;
-  min-width: 96rpx;
-  height: 50rpx;
+  min-width: 168rpx;
+  height: 56rpx;
   margin: 0;
   padding: 0 18rpx;
   border-radius: 999rpx;
   background: #ffe6b9;
   color: #8a6130;
-  font-size: 21rpx;
-  line-height: 50rpx;
+  font-size: 24rpx;
+  line-height: 56rpx;
 }
 
 .small-button::after,
@@ -153,12 +153,12 @@
 
 .picker-field {
   box-sizing: border-box;
-  min-height: 70rpx;
-  padding: 20rpx 22rpx;
+  min-height: 78rpx;
+  padding: 23rpx 22rpx;
   border-radius: 20rpx;
   background: #edf7f1;
   color: #5c7161;
-  font-size: 24rpx;
+  font-size: 27rpx;
 }
 
 .rule-section {
@@ -170,7 +170,7 @@
 .rule-section-title {
   display: block;
   color: #9a7651;
-  font-size: 21rpx;
+  font-size: 24rpx;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -187,7 +187,7 @@
 
 .rule-name {
   color: #5b4942;
-  font-size: 23rpx;
+  font-size: 26rpx;
   line-height: 1.25;
 }
 
@@ -199,7 +199,7 @@
 }
 
 .rule-value {
-  font-size: 21rpx;
+  font-size: 24rpx;
 }
 
 .plus {
@@ -211,9 +211,9 @@
 }
 
 .delete-link {
-  width: 30rpx;
-  height: 30rpx;
-  flex: 0 0 30rpx;
+  width: 38rpx;
+  height: 38rpx;
+  flex: 0 0 38rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -222,7 +222,7 @@
   border-radius: 50%;
   background: #fae3e7;
   color: #c76578;
-  font-size: 20rpx;
+  font-size: 24rpx;
   line-height: 1;
 }
 
@@ -239,8 +239,8 @@
 
 .bear-editor .button {
   flex: 0 0 180rpx;
-  height: 70rpx;
-  font-size: 24rpx;
+  height: 78rpx;
+  font-size: 27rpx;
 }
 
 .bear-line {
@@ -256,7 +256,7 @@
   align-items: center;
   gap: 14rpx;
   color: #5b4942;
-  font-size: 24rpx;
+  font-size: 27rpx;
 }
 
 .bear-name image {

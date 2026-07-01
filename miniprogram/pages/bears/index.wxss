@@ -214,13 +214,17 @@
   background: #df8cac;
 }
 
+.exchange-button {
+  background: #82b58a;
+}
+
 .pending-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16rpx;
   margin-top: 22rpx;
-  padding: 24rpx;
+  padding: 26rpx;
   background: linear-gradient(120deg, #fde7ef 0%, #fff3d8 48%, #e9f5df 100%);
 }
 
@@ -261,7 +265,7 @@
 
 .pending-title {
   color: #5b4942;
-  font-size: 25rpx;
+  font-size: 28rpx;
   font-weight: 700;
   line-height: 1.25;
 }
@@ -271,7 +275,7 @@
   border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.72);
   color: #9a6545;
-  font-size: 19rpx;
+  font-size: 22rpx;
   line-height: 1;
 }
 
@@ -279,7 +283,7 @@
   display: block;
   margin-top: 8rpx;
   color: #8b7c73;
-  font-size: 21rpx;
+  font-size: 24rpx;
   line-height: 1.35;
 }
 
@@ -289,7 +293,7 @@
   border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.68);
   color: #9b7650;
-  font-size: 20rpx;
+  font-size: 23rpx;
 }
 
 .pending-actions {
@@ -299,14 +303,14 @@
 }
 
 .pending-button {
-  width: 78rpx;
-  height: 46rpx;
+  width: 92rpx;
+  height: 54rpx;
   margin: 0;
   padding: 0;
   border-radius: 999rpx;
   color: #fff;
-  font-size: 21rpx;
-  line-height: 46rpx;
+  font-size: 24rpx;
+  line-height: 54rpx;
   text-align: center;
 }
 
@@ -328,7 +332,7 @@
 .audit-line {
   margin-top: 13rpx;
   color: #72645b;
-  font-size: 22rpx;
+  font-size: 25rpx;
   line-height: 1.45;
 }
 
@@ -365,7 +369,7 @@
 
 .picker-title {
   color: #4d3a32;
-  font-size: 28rpx;
+  font-size: 31rpx;
   font-weight: 700;
 }
 
@@ -383,21 +387,30 @@
 }
 
 .picker-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14rpx;
   margin-top: 22rpx;
 }
 
+.picker-grid.two-column {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .picker-bear {
-  flex: 1;
   min-width: 0;
   box-sizing: border-box;
-  padding: 16rpx 10rpx;
+  padding: 18rpx 10rpx;
   border-radius: 24rpx;
   background: rgba(255, 255, 255, 0.68);
   text-align: center;
   color: #5b4942;
-  font-size: 21rpx;
+  font-size: 24rpx;
+}
+
+.picker-bear.active {
+  background: #ffe6b9;
+  color: #8a6130;
 }
 
 .picker-bear image {

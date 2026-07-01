@@ -37,7 +37,7 @@
   <button wx:if="{{!state.drawUsed}}" class="button draw-button" bindtap="handleDraw">开始抽签</button>
   <view wx:else class="action-row">
     <button class="button redraw-button" bindtap="requestRedraw">申请重抽</button>
-    <button class="button secondary" bindtap="requestExchange">申请兑换</button>
+    <button class="button exchange-button" bindtap="requestExchange">申请兑换</button>
   </view>
 
   <view wx:if="{{pendingNotice}}" class="pending-card soft-card">
@@ -71,11 +71,26 @@
   <view wx:if="{{showExchangePicker}}" class="picker-mask">
     <view class="picker-sheet soft-card">
       <view class="picker-top">
-        <text class="picker-title">选择想兑换的小熊</text>
+        <text class="picker-title">{{exchangePickerTitle}}</text>
         <view class="picker-close" bindtap="closeExchangePicker">×</view>
       </view>
       <view class="picker-grid">
         <view class="picker-bear" wx:for="{{exchangeChoices}}" wx:key="name" data-name="{{item.name}}" bindtap="chooseExchangeBear">
+          <image src="{{item.image}}" mode="aspectFit" />
+          <text>{{item.name}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showWishPicker}}" class="picker-mask">
+    <view class="picker-sheet soft-card">
+      <view class="picker-top">
+        <text class="picker-title">选择心愿小熊</text>
+        <view class="picker-close" bindtap="closeWishPicker">×</view>
+      </view>
+      <view class="picker-grid two-column">
+        <view class="picker-bear {{item.active ? 'active' : ''}}" wx:for="{{wishChoices}}" wx:key="name" data-name="{{item.name}}" bindtap="chooseWishBear">
           <image src="{{item.image}}" mode="aspectFit" />
           <text>{{item.name}}</text>
         </view>

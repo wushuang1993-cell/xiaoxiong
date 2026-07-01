@@ -11,7 +11,12 @@ Page({
     currentUser: "闪闪鱼",
     pendingNotice: null,
     exchangeChoices: [],
-    showExchangePicker: false
+    showExchangePicker: false,
+    exchangePickerMode: "request",
+    exchangePickerTitle: "选择想兑换的小熊",
+    exchangePending: null,
+    wishChoices: [],
+    showWishPicker: false
   },
 
   onShow() {
@@ -89,7 +94,7 @@ Page({
       wx.showToast({ title: message, icon: "none" });
     } catch (error) {
       console.warn("[小熊保存失败]", error);
-      wx.showToast({ title: "保存失败", icon: "none" });
+      wx.showToast({ title: "云端保存失败", icon: "none" });
     }
   },
 
@@ -162,21 +167,28 @@ Page({
     }
     this.setData({
       exchangeChoices: opponentBears.map((name) => ({ name, image: state.bears.find((bear) => bear.name === name)?.image || "" })),
-      showExchangePicker: true
+      showExchangePicker: true,
+      exchangePickerMode: "request",
+      exchangePickerTitle: "选择想兑换的小熊",
+      exchangePending: null
     });
   },
 
   closeExchangePicker() {
-    this.setData({ showExchangePicker: false, exchangeChoices: [] });
+    this.setData({ showExchangePicker: false, exchangeChoices: [], exchangePending: null });
   },
 
   chooseExchangeBear(event) {
-    const targetBear = event.currentTarget.dataset.name;
-    if (!targetBear) return;
+    const selectedBear = event.currentTarget.dataset.name;
+    if (!selectedBear) return;
+    if (this.data.exchangePickerMode === "approve") {
+      this.completeExchange(selectedBear);
+      return;
+    }
     const currentUser = getApp().globalData.currentUser || "闪闪鱼";
     const nextState = normalizeState(this.data.state);
-    nextState.pendingExchange = { applicant: currentUser, targetBear, date: formatDateKey() };
-    nextState.actions = addAction(nextState, currentUser, "申请兑换", targetBear);
+    nextState.pendingExchange = { applicant: currentUser, targetBear: selectedBear, date: formatDateKey() };
+    nextState.actions = addAction(nextState, currentUser, "申请兑换", selectedBear);
     this.setData({ showExchangePicker: false, exchangeChoices: [] });
     this.persist(nextState, "已申请兑换");
   },
@@ -227,44 +239,62 @@ Page({
       wx.showToast({ title: "对方没有可交换小熊", icon: "none" });
       return;
     }
-    wx.showActionSheet({
-      itemList: applicantBears,
-      success: (res) => {
-        const exchangeBear = applicantBears[res.tapIndex];
-        if (!exchangeBear) return;
-        const nextState = normalizeState(this.data.state);
-        const assignments = nextState.draw.assignments;
-        assignments[pending.applicant] = (assignments[pending.applicant] || []).map((bear) =>
-          bear === exchangeBear ? pending.targetBear : bear
-        );
-        assignments[currentUser] = (assignments[currentUser] || []).map((bear) =>
-          bear === pending.targetBear ? exchangeBear : bear
-        );
-        nextState.pendingExchange = null;
-        this.addCoinLog(nextState, pending.applicant, "兑换小熊", -2);
-        nextState.actions = addAction(nextState, currentUser, "同意兑换", `${pending.targetBear} ↔ ${exchangeBear}`);
-        this.persist(nextState, "已完成兑换");
-      }
+    this.setData({
+      exchangeChoices: applicantBears.map((name) => ({ name, image: state.bears.find((bear) => bear.name === name)?.image || "" })),
+      showExchangePicker: true,
+      exchangePickerMode: "approve",
+      exchangePickerTitle: "选择给对方的小熊",
+      exchangePending: pending
     });
+  },
+
+  completeExchange(exchangeBear) {
+    const nextState = normalizeState(this.data.state);
+    const pending = this.data.exchangePending || nextState.pendingExchange;
+    const currentUser = getApp().globalData.currentUser || "闪闪鱼";
+    if (!pending || pending.applicant === currentUser || !nextState.draw?.assignments) return;
+    const assignments = nextState.draw.assignments;
+    assignments[pending.applicant] = (assignments[pending.applicant] || []).map((bear) =>
+      bear === exchangeBear ? pending.targetBear : bear
+    );
+    assignments[currentUser] = (assignments[currentUser] || []).map((bear) =>
+      bear === pending.targetBear ? exchangeBear : bear
+    );
+    nextState.pendingExchange = null;
+    this.addCoinLog(nextState, pending.applicant, "兑换小熊", -2);
+    nextState.actions = addAction(nextState, currentUser, "同意兑换", `${pending.targetBear} 换 ${exchangeBear}`);
+    this.setData({ showExchangePicker: false, exchangeChoices: [], exchangePending: null });
+    this.persist(nextState, "已完成兑换");
   },
 
   openWishPicker() {
     const state = normalizeState(this.data.state);
     const activeBears = state.bears.filter((bear) => bear.active !== false);
-    wx.showActionSheet({
-      itemList: activeBears.map((bear) => bear.name),
-      success: (res) => {
-        const selectedBear = activeBears[res.tapIndex]?.name;
-        if (!selectedBear) return;
-        const currentUser = getApp().globalData.currentUser || "闪闪鱼";
-        const nextState = normalizeState(state);
-        const person = nextState.people.find((item) => item.name === currentUser);
-        if (person) {
-          person.wishBear = selectedBear;
-          nextState.actions = addAction(nextState, currentUser, "设置心愿小熊", selectedBear);
-          this.persist(nextState, "已设置心愿");
-        }
-      }
+    this.setData({
+      wishChoices: activeBears.map((bear) => ({
+        name: bear.name,
+        image: bear.image,
+        active: state.people.find((person) => person.name === (getApp().globalData.currentUser || "闪闪鱼"))?.wishBear === bear.name
+      })),
+      showWishPicker: true
     });
+  },
+
+  closeWishPicker() {
+    this.setData({ showWishPicker: false, wishChoices: [] });
+  },
+
+  chooseWishBear(event) {
+    const selectedBear = event.currentTarget.dataset.name;
+    if (!selectedBear) return;
+    const currentUser = getApp().globalData.currentUser || "闪闪鱼";
+    const nextState = normalizeState(this.data.state);
+    const person = nextState.people.find((item) => item.name === currentUser);
+    if (person) {
+      person.wishBear = selectedBear;
+      nextState.actions = addAction(nextState, currentUser, "设置心愿小熊", selectedBear);
+      this.setData({ showWishPicker: false, wishChoices: [] });
+      this.persist(nextState, "已设置心愿");
+    }
   }
 });
