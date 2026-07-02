@@ -64,18 +64,25 @@
         <text class="section-title">小熊目录</text>
         <text class="section-note">开启的小熊会参与抽签，最多 6 只。</text>
       </view>
+      <button class="small-button edit-toggle" bindtap="toggleBearsEditing">{{bearsEditing ? '完成' : '编辑'}}</button>
     </view>
-    <view class="bear-editor">
-      <image class="new-bear-avatar editable-avatar" src="{{newBearImage}}" mode="aspectFit" bindtap="changeNewBearAvatar" />
+    <view wx:if="{{bearsEditing}}" class="bear-editor">
+      <view wx:if="{{!newBearImage}}" class="new-bear-avatar empty-avatar" bindtap="changeNewBearAvatar">+</view>
+      <image wx:else class="new-bear-avatar editable-avatar" src="{{newBearImage}}" mode="aspectFit" bindtap="changeNewBearAvatar" />
       <input class="input" placeholder="新增小熊名称" value="{{bearName}}" bindinput="onBearNameInput" />
       <button class="button secondary" bindtap="addBear">新增小熊</button>
     </view>
-    <view class="bear-line" wx:for="{{state.bears}}" wx:key="name">
+    <view class="bear-line {{bearsEditing ? 'editing' : ''}}" wx:for="{{state.bears}}" wx:key="name">
       <view class="bear-name">
-        <image class="editable-avatar" src="{{item.image}}" mode="aspectFit" data-name="{{item.name}}" bindtap="changeBearAvatar" />
-        <text>{{item.name}}</text>
+        <view wx:if="{{!item.image}}" class="bear-avatar-placeholder {{bearsEditing ? 'editable-avatar' : ''}}" data-name="{{item.name}}" bindtap="changeBearAvatar">+</view>
+        <image wx:else class="{{bearsEditing ? 'editable-avatar' : ''}}" src="{{item.image}}" mode="aspectFit" data-name="{{item.name}}" bindtap="changeBearAvatar" />
+        <input wx:if="{{bearsEditing}}" class="bear-name-input" value="{{item.name}}" data-name="{{item.name}}" bindblur="renameBear" confirm-type="done" bindconfirm="renameBear" />
+        <text wx:else>{{item.name}}</text>
       </view>
-      <switch checked="{{item.active}}" data-name="{{item.name}}" bindchange="toggleBear" color="#82b58a" />
+      <view class="bear-controls">
+        <view wx:if="{{bearsEditing}}" class="delete-link" data-name="{{item.name}}" bindtap="deleteBear">×</view>
+        <switch checked="{{item.active}}" data-name="{{item.name}}" bindchange="toggleBear" color="#82b58a" />
+      </view>
     </view>
   </view>
 </view>

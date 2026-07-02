@@ -43,7 +43,8 @@ Page({
     ruleSections: [],
     rulesEditing: false,
     bearName: "",
-    newBearImage: "../../assets/tractor.png"
+    newBearImage: "",
+    bearsEditing: false
   },
 
   onShow() {
@@ -78,8 +79,10 @@ Page({
 
   renderState(state) {
     const safeState = normalizeState(state);
+    const loginPerson = safeState.people.find((person) => person.name === this.data.currentUser);
     this.setData({
       state: safeState,
+      loginAvatar: this.data.isLoggedIn ? loginPerson?.image || this.avatarForUser(this.data.currentUser) : this.data.loginAvatar,
       ruleSections: RULE_GROUPS.map((group) => ({
         ...group,
         rules: decorateRules(safeState.rules[group.key] || [])
@@ -161,6 +164,7 @@ Page({
   },
 
   async changeBearAvatar(event) {
+    if (!this.data.bearsEditing) return;
     const name = event.currentTarget.dataset.name;
     if (!name) return;
     try {
@@ -296,6 +300,73 @@ Page({
     this.setData({ bearName: event.detail.value });
   },
 
+  toggleBearsEditing() {
+    this.setData({ bearsEditing: !this.data.bearsEditing });
+  },
+
+  renameBearEverywhere(state, oldName, newName) {
+    state.people = (state.people || []).map((person) => ({
+      ...person,
+      wishBear: person.wishBear === oldName ? newName : person.wishBear
+    }));
+
+    if (state.draw?.assignments) {
+      Object.keys(state.draw.assignments).forEach((personName) => {
+        state.draw.assignments[personName] = (state.draw.assignments[personName] || []).map((bearName) =>
+          bearName === oldName ? newName : bearName
+        );
+      });
+    }
+
+    if (state.pendingExchange?.targetBear === oldName) state.pendingExchange.targetBear = newName;
+    if (state.pendingExchange?.exchangeBear === oldName) state.pendingExchange.exchangeBear = newName;
+    return state;
+  },
+
+  removeBearEverywhere(state, name) {
+    const fallbackBear = (state.bears || []).find((bear) => bear.name !== name && bear.active !== false)
+      || (state.bears || []).find((bear) => bear.name !== name);
+
+    state.people = (state.people || []).map((person) => ({
+      ...person,
+      wishBear: person.wishBear === name ? fallbackBear?.name || "" : person.wishBear
+    }));
+
+    if (state.draw?.assignments) {
+      Object.keys(state.draw.assignments).forEach((personName) => {
+        state.draw.assignments[personName] = (state.draw.assignments[personName] || []).filter((bearName) => bearName !== name);
+      });
+    }
+
+    if (state.pendingExchange?.targetBear === name || state.pendingExchange?.exchangeBear === name) {
+      state.pendingExchange = null;
+    }
+    return state;
+  },
+
+  renameBear(event) {
+    const oldName = event.currentTarget.dataset.name;
+    const newName = String(event.detail.value || "").trim();
+    if (!oldName || oldName === newName) return;
+    if (!newName) {
+      wx.showToast({ title: "小熊名称不能为空", icon: "none" });
+      this.renderState(this.data.state);
+      return;
+    }
+    const nextState = normalizeState(this.data.state);
+    if (nextState.bears.some((bear) => bear.name === newName)) {
+      wx.showToast({ title: "小熊已存在", icon: "none" });
+      this.renderState(nextState);
+      return;
+    }
+    const bear = nextState.bears.find((item) => item.name === oldName);
+    if (!bear) return;
+    bear.name = newName;
+    this.renameBearEverywhere(nextState, oldName, newName);
+    nextState.actions = addAction(nextState, getApp().globalData.currentUser || "未登录", "修改小熊名称", `${oldName} → ${newName}`);
+    this.persist(nextState, "名称已更新");
+  },
+
   addBear() {
     const name = this.data.bearName.trim();
     if (!name) {
@@ -308,10 +379,40 @@ Page({
       wx.showToast({ title: "小熊已存在", icon: "none" });
       return;
     }
-    nextState.bears.push({ name, image: this.data.newBearImage || "../../assets/tractor.png", active: false });
+    nextState.bears.push({ name, image: this.data.newBearImage || "", active: false });
     nextState.actions = addAction(nextState, currentUser, "新增小熊", name);
-    this.setData({ bearName: "", newBearImage: "../../assets/tractor.png" });
+    this.setData({ bearName: "", newBearImage: "" });
     this.persist(nextState, "已新增小熊");
+  },
+
+  deleteBear(event) {
+    const name = event.currentTarget.dataset.name;
+    const nextState = normalizeState(this.data.state);
+    const bear = nextState.bears.find((item) => item.name === name);
+    if (!bear) return;
+    if (nextState.bears.length <= 1) {
+      wx.showToast({ title: "至少保留 1 只", icon: "none" });
+      return;
+    }
+    const activeCount = nextState.bears.filter((item) => item.active !== false).length;
+    if (bear.active !== false && activeCount <= 1) {
+      wx.showToast({ title: "至少保留 1 只参与", icon: "none" });
+      return;
+    }
+    wx.showModal({
+      title: "删除小熊",
+      content: `确定删除${name}吗？`,
+      confirmText: "删除",
+      confirmColor: "#c76578",
+      success: (result) => {
+        if (!result.confirm) return;
+        const latestState = normalizeState(this.data.state);
+        latestState.bears = latestState.bears.filter((item) => item.name !== name);
+        this.removeBearEverywhere(latestState, name);
+        latestState.actions = addAction(latestState, getApp().globalData.currentUser || "未登录", "删除小熊", name);
+        this.persist(latestState, "已删除小熊");
+      }
+    });
   },
 
   toggleBear(event) {

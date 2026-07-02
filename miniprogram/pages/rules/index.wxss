@@ -268,6 +268,7 @@
   display: flex;
   gap: 14rpx;
   align-items: center;
+  margin-bottom: 8rpx;
 }
 
 .new-bear-avatar {
@@ -276,6 +277,15 @@
   flex: 0 0 72rpx;
   border-radius: 20rpx;
   background: #fff9ef;
+}
+
+.empty-avatar,
+.bear-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cda06c;
+  border: 2rpx dashed #e5cfad;
 }
 
 .bear-editor .input {
@@ -293,8 +303,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16rpx;
   padding: 18rpx 0;
   border-bottom: 1rpx solid rgba(120, 98, 80, 0.1);
+}
+
+.bear-line.editing {
+  padding: 16rpx 0;
 }
 
 .bear-name {
@@ -303,11 +318,34 @@
   gap: 14rpx;
   color: #5b4942;
   font-size: 29rpx;
+  flex: 1;
+  min-width: 0;
 }
 
-.bear-name image {
+.bear-name image,
+.bear-avatar-placeholder {
   width: 58rpx;
   height: 58rpx;
+  flex: 0 0 58rpx;
   border-radius: 18rpx;
   background: #fff9ef;
+}
+
+.bear-name-input {
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  height: 66rpx;
+  padding: 0 18rpx;
+  border-radius: 18rpx;
+  background: #f8f0e3;
+  color: #4d3a32;
+  font-size: 28rpx;
+}
+
+.bear-controls {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  flex: 0 0 auto;
 }
