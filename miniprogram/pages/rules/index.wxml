@@ -16,7 +16,7 @@
 
     <view wx:else class="login-panel logged-in">
       <view class="login-profile">
-        <image class="login-avatar" src="{{loginAvatar}}" mode="aspectFit" />
+        <image class="login-avatar editable-avatar" src="{{loginAvatar}}" mode="aspectFit" bindtap="changeCurrentUserAvatar" />
       </view>
       <view class="login-detail">
         <view class="login-name-row">
@@ -66,12 +66,13 @@
       </view>
     </view>
     <view class="bear-editor">
+      <image class="new-bear-avatar editable-avatar" src="{{newBearImage}}" mode="aspectFit" bindtap="changeNewBearAvatar" />
       <input class="input" placeholder="新增小熊名称" value="{{bearName}}" bindinput="onBearNameInput" />
       <button class="button secondary" bindtap="addBear">新增小熊</button>
     </view>
     <view class="bear-line" wx:for="{{state.bears}}" wx:key="name">
       <view class="bear-name">
-        <image src="{{item.image}}" mode="aspectFit" />
+        <image class="editable-avatar" src="{{item.image}}" mode="aspectFit" data-name="{{item.name}}" bindtap="changeBearAvatar" />
         <text>{{item.name}}</text>
       </view>
       <switch checked="{{item.active}}" data-name="{{item.name}}" bindchange="toggleBear" color="#82b58a" />

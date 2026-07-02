@@ -86,6 +86,14 @@
   background: #fff7ea;
 }
 
+.editable-avatar {
+  box-shadow: 0 0 0 4rpx rgba(255, 255, 255, 0.85);
+}
+
+.editable-avatar:active {
+  opacity: 0.72;
+}
+
 .login-detail {
   flex: 1;
   min-width: 0;
@@ -260,6 +268,14 @@
   display: flex;
   gap: 14rpx;
   align-items: center;
+}
+
+.new-bear-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  flex: 0 0 72rpx;
+  border-radius: 20rpx;
+  background: #fff9ef;
 }
 
 .bear-editor .input {

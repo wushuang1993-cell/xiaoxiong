@@ -42,7 +42,8 @@ Page({
     ruleAmount: "",
     ruleSections: [],
     rulesEditing: false,
-    bearName: ""
+    bearName: "",
+    newBearImage: "../../assets/tractor.png"
   },
 
   onShow() {
@@ -90,10 +91,106 @@ Page({
     try {
       await saveState(normalizeState(nextState));
       this.renderState(nextState);
+      this.syncLoginAvatar(nextState);
       wx.showToast({ title: message, icon: "none" });
     } catch (error) {
       console.warn("[小熊保存失败]", error);
       wx.showToast({ title: "保存失败", icon: "none" });
+    }
+  },
+
+  syncLoginAvatar(state = this.data.state) {
+    if (!this.data.isLoggedIn) return;
+    const person = normalizeState(state).people.find((item) => item.name === this.data.currentUser);
+    this.setData({ loginAvatar: person?.image || this.avatarForUser(this.data.currentUser) });
+  },
+
+  chooseImagePath() {
+    return new Promise((resolve, reject) => {
+      wx.chooseImage({
+        count: 1,
+        sizeType: ["compressed"],
+        sourceType: ["album", "camera"],
+        success: (result) => resolve(result.tempFilePaths?.[0]),
+        fail: reject
+      });
+    });
+  },
+
+  uploadAvatarImage(tempFilePath, folder) {
+    if (!tempFilePath) return Promise.reject(new Error("未选择图片"));
+    if (!wx.cloud?.uploadFile) return Promise.resolve(tempFilePath);
+    const extension = String(tempFilePath).match(/\.([a-zA-Z0-9]+)(?:\?|$)/)?.[1] || "png";
+    const cloudPath = `avatars/${folder}/${Date.now()}-${Math.floor(Math.random() * 100000)}.${extension}`;
+    return wx.cloud.uploadFile({ cloudPath, filePath: tempFilePath }).then((result) => result.fileID || tempFilePath);
+  },
+
+  async pickAndUploadAvatar(folder) {
+    const tempFilePath = await this.chooseImagePath();
+    wx.showLoading({ title: "上传中" });
+    try {
+      return await this.uploadAvatarImage(tempFilePath, folder);
+    } finally {
+      wx.hideLoading();
+    }
+  },
+
+  async changeCurrentUserAvatar() {
+    if (!this.data.isLoggedIn) {
+      wx.showToast({ title: "请先登录", icon: "none" });
+      return;
+    }
+    try {
+      const currentUser = this.data.currentUser;
+      const image = await this.pickAndUploadAvatar(`people-${Date.now()}`);
+      const nextState = normalizeState(this.data.state);
+      const person = nextState.people.find((item) => item.name === currentUser);
+      if (!person) {
+        wx.showToast({ title: "没有找到身份", icon: "none" });
+        return;
+      }
+      person.image = image;
+      nextState.actions = addAction(nextState, currentUser, "修改头像", currentUser);
+      this.persist(nextState, "头像已更新");
+    } catch (error) {
+      if (!String(error?.errMsg || "").includes("cancel")) {
+        console.warn("[头像更新失败]", error);
+        wx.showToast({ title: "头像更新失败", icon: "none" });
+      }
+    }
+  },
+
+  async changeBearAvatar(event) {
+    const name = event.currentTarget.dataset.name;
+    if (!name) return;
+    try {
+      const image = await this.pickAndUploadAvatar(`bears-${Date.now()}`);
+      const nextState = normalizeState(this.data.state);
+      const bear = nextState.bears.find((item) => item.name === name);
+      if (!bear) {
+        wx.showToast({ title: "没有找到小熊", icon: "none" });
+        return;
+      }
+      bear.image = image;
+      nextState.actions = addAction(nextState, getApp().globalData.currentUser || "未登录", "修改小熊头像", name);
+      this.persist(nextState, "小熊头像已更新");
+    } catch (error) {
+      if (!String(error?.errMsg || "").includes("cancel")) {
+        console.warn("[小熊头像更新失败]", error);
+        wx.showToast({ title: "头像更新失败", icon: "none" });
+      }
+    }
+  },
+
+  async changeNewBearAvatar() {
+    try {
+      const image = await this.pickAndUploadAvatar(`bears-new-${Date.now()}`);
+      this.setData({ newBearImage: image });
+    } catch (error) {
+      if (!String(error?.errMsg || "").includes("cancel")) {
+        console.warn("[新增小熊头像更新失败]", error);
+        wx.showToast({ title: "头像更新失败", icon: "none" });
+      }
     }
   },
 
@@ -211,9 +308,9 @@ Page({
       wx.showToast({ title: "小熊已存在", icon: "none" });
       return;
     }
-    nextState.bears.push({ name, image: "../../assets/tractor.png", active: false });
+    nextState.bears.push({ name, image: this.data.newBearImage || "../../assets/tractor.png", active: false });
     nextState.actions = addAction(nextState, currentUser, "新增小熊", name);
-    this.setData({ bearName: "" });
+    this.setData({ bearName: "", newBearImage: "../../assets/tractor.png" });
     this.persist(nextState, "已新增小熊");
   },
 
