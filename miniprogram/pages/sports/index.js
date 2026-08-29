@@ -1,6 +1,8 @@
 const { DEFAULT_STATE, addAction, formatDateKey, loadState, normalizeState, saveState } = require("../../utils/state");
 
 const SPORT_TYPES = ["跑步", "快走", "骑行", "游泳", "力量", "球类", "瑜伽"];
+const STEP_PK_CUTOFF_HOUR = 23;
+const STEP_PK_CUTOFF_TEXT = "23:00";
 
 function dateKeyFor(year, month, day) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -19,6 +21,7 @@ Page({
     calendarDays: [],
     state: DEFAULT_STATE,
     sportTypes: SPORT_TYPES,
+    stepCutoffText: STEP_PK_CUTOFF_TEXT,
     todayLogs: [],
     selectedDateTitle: "",
     stepsInput: "",
@@ -50,7 +53,12 @@ Page({
 
   async refresh() {
     try {
-      this.renderState(await loadState());
+      const state = normalizeState(await loadState());
+      const hasStepWinnerUpdate = this.awardStepWinnerIfReady(state, formatDateKey());
+      if (hasStepWinnerUpdate) {
+        await saveState(state);
+      }
+      this.renderState(state);
     } catch (error) {
       console.warn("[小熊运动读取失败]", error);
       wx.showToast({ title: "读取失败", icon: "none" });
@@ -205,9 +213,9 @@ Page({
     }
   },
 
-  addRedrawChanceLog(state, personName, detail, id) {
+  addRedrawChanceLog(state, personName, detail, id, dateKey = formatDateKey()) {
     const now = new Date();
-    const day = now.getDate();
+    const day = Number(dateKey.slice(-2)) || now.getDate();
     state.logs = state.logs || {};
     state.logs[day] = state.logs[day] || [];
     if (id && state.logs[day].some((log) => log.id === id)) return false;
@@ -218,7 +226,7 @@ Page({
       detail,
       delta: 1,
       creditType: "redraw",
-      date: formatDateKey(now),
+      date: dateKey,
       earnedDay: day,
       createdAt: now.toISOString()
     });
@@ -254,25 +262,52 @@ Page({
     this.setData({ stepsInput: String(event.detail.value || "").replace(/[^\d]/g, "").slice(0, 6) });
   },
 
+  isStepPkClosed(dateKey) {
+    const todayKey = formatDateKey();
+    if (dateKey < todayKey) return true;
+    if (dateKey > todayKey) return false;
+    return new Date().getHours() >= STEP_PK_CUTOFF_HOUR;
+  },
+
   awardStepWinnerIfReady(state, dateKey) {
+    if (!this.isStepPkClosed(dateKey)) return false;
     const people = state.people || [];
     const rows = this.stepRowsForDay(state, dateKey);
     const rewardPrefix = `steps-winner-${dateKey}-`;
-    state.logs = Object.keys(state.logs || {}).reduce((nextLogs, day) => {
-      nextLogs[day] = (state.logs[day] || []).filter((log) => !String(log.id || "").startsWith(rewardPrefix));
-      return nextLogs;
-    }, {});
-    state.actions = (state.actions || []).filter((action) => !String(action.id || "").startsWith(`action-${rewardPrefix}`));
+    const existingRewardIds = Object.keys(state.logs || {}).reduce((ids, day) => {
+      (state.logs[day] || []).forEach((log) => {
+        if (String(log.id || "").startsWith(rewardPrefix)) ids.push(log.id);
+      });
+      return ids;
+    }, []);
+    const clearStepWinnerReward = () => {
+      state.logs = Object.keys(state.logs || {}).reduce((nextLogs, day) => {
+        nextLogs[day] = (state.logs[day] || []).filter((log) => !String(log.id || "").startsWith(rewardPrefix));
+        return nextLogs;
+      }, {});
+      state.actions = (state.actions || []).filter((action) => !String(action.id || "").startsWith(`action-${rewardPrefix}`));
+    };
     const allRecorded = people.length > 0 && rows.every((row) => Number(row.steps || 0) > 0);
-    if (!allRecorded) return;
+    if (!allRecorded) {
+      if (!existingRewardIds.length) return false;
+      clearStepWinnerReward();
+      return true;
+    }
     const winners = rows.filter((row) => row.isWinner);
-    if (winners.length !== 1) return;
+    if (winners.length !== 1) {
+      if (!existingRewardIds.length) return false;
+      clearStepWinnerReward();
+      return true;
+    }
     const winner = winners[0];
     const id = `steps-winner-${dateKey}-${winner.name}`;
-    const added = this.addRedrawChanceLog(state, winner.name, "步数胜者", id);
+    if (existingRewardIds.length === 1 && existingRewardIds[0] === id) return false;
+    clearStepWinnerReward();
+    const added = this.addRedrawChanceLog(state, winner.name, "步数胜者", id, dateKey);
     if (added) {
       state.actions = addAction(state, winner.name, "步数胜者", "+1 申请重抽", `action-${id}`);
     }
+    return true;
   },
 
   async saveManualSteps() {
@@ -301,9 +336,9 @@ Page({
       createdAt: now.toISOString()
     });
     state.actions = addAction(state, this.data.selectedPerson, "更新步数", `${steps}`);
-    this.awardStepWinnerIfReady(state, dateKey);
+    const awarded = this.awardStepWinnerIfReady(state, dateKey);
     this.setData({ stepsInput: "" });
-    await this.saveSportsState(state, "步数已更新");
+    await this.saveSportsState(state, awarded ? "步数已结算" : "步数已更新");
   },
 
   syncWechatSteps() {

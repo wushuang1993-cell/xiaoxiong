@@ -2,6 +2,8 @@ const { DEFAULT_STATE, addAction, drawBears, formatDateKey, loadState, normalize
 
 const AUCTION_FEE = 1;
 const AUCTION_DURATION_MINUTES = 180;
+const MANUAL_DRAW_HOUR = 23;
+const MANUAL_DRAW_MINUTE = 30;
 
 Page({
   data: {
@@ -24,7 +26,9 @@ Page({
     auctionMaxBid: 1,
     auctionDeadlineText: "",
     wishChoices: [],
-    showWishPicker: false
+    showWishPicker: false,
+    drawReminder: null,
+    recentDrawDays: []
   },
 
   onShow() {
@@ -66,9 +70,58 @@ Page({
       currentUser,
       isLoggedIn,
       pendingNotice: this.pendingNoticeForUser(safeState, currentUser),
-      todayActions: (safeState.actions || []).filter((action) => action.date === todayId)
+      todayActions: (safeState.actions || []).filter((action) => action.date === todayId),
+      drawReminder: this.drawReminderForToday(safeState),
+      recentDrawDays: this.recentDrawDays(safeState, bearMap)
     });
     this.expireAuctionIfNeeded(safeState);
+  },
+
+  drawReminderForToday(state) {
+    const now = new Date();
+    const reminderAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), MANUAL_DRAW_HOUR, MANUAL_DRAW_MINUTE, 0, 0);
+    if (state.drawUsed || now.getTime() < reminderAt.getTime()) return null;
+    return {
+      title: "23:30 手动抽小熊",
+      detail: "今天还没有完成抽小熊，需要现在手动抽签。"
+    };
+  },
+
+  dateAtOffset(offset) {
+    const date = new Date();
+    date.setDate(date.getDate() + offset);
+    return date;
+  },
+
+  drawForDate(state, dateKey) {
+    if (state.drawHistory?.[dateKey]) return state.drawHistory[dateKey];
+    if (state.todayId === dateKey && state.draw?.assignments) return state.draw;
+    return null;
+  },
+
+  recentDrawDays(state, bearMap) {
+    return [
+      { label: "今天", date: this.dateAtOffset(0) },
+      { label: "昨天", date: this.dateAtOffset(-1) }
+    ].map((item) => {
+      const dateKey = formatDateKey(item.date);
+      const draw = this.drawForDate(state, dateKey);
+      return {
+        key: dateKey,
+        label: item.label,
+        dateText: `${item.date.getMonth() + 1}月${item.date.getDate()}日`,
+        hasDraw: Boolean(draw?.assignments),
+        people: (state.people || []).map((person) => ({
+          name: person.name,
+          displayName: person.displayName || person.name,
+          image: person.image,
+          bears: (draw?.assignments?.[person.name] || []).map((bearName) => ({
+            name: bearName,
+            image: bearMap[bearName]?.image || ""
+          }))
+        }))
+      };
+    });
   },
 
   requireLogin() {

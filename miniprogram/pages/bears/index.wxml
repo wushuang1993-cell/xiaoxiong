@@ -40,6 +40,39 @@
     <button class="button exchange-button" bindtap="requestExchange">申请兑换</button>
   </view>
 
+  <view wx:if="{{drawReminder}}" class="draw-reminder soft-card">
+    <view>
+      <text class="reminder-title">{{drawReminder.title}}</text>
+      <text class="reminder-detail">{{drawReminder.detail}}</text>
+    </view>
+    <button class="reminder-button" bindtap="handleDraw">手动抽小熊</button>
+  </view>
+
+  <view class="recent-draw soft-card">
+    <view class="recent-title">今天 / 昨天小熊</view>
+    <view class="recent-day" wx:for="{{recentDrawDays}}" wx:for-item="day" wx:key="key">
+      <view class="recent-day-head">
+        <text>{{day.label}}</text>
+        <text>{{day.dateText}}</text>
+      </view>
+      <view wx:if="{{day.hasDraw}}" class="recent-people">
+        <view class="recent-person" wx:for="{{day.people}}" wx:for-item="person" wx:key="name">
+          <view class="recent-person-head">
+            <image src="{{person.image}}" mode="aspectFit" />
+            <text>{{person.displayName}}</text>
+          </view>
+          <view class="recent-bears">
+            <view class="recent-bear" wx:for="{{person.bears}}" wx:for-item="bear" wx:key="name">
+              <image src="{{bear.image}}" mode="aspectFit" />
+              <text>{{bear.name}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view wx:else class="empty muted">没有保存小熊结果</view>
+    </view>
+  </view>
+
   <view wx:if="{{pendingNotice}}" class="pending-card soft-card">
     <view class="pending-main">
       <view class="pending-avatar-wrap">
