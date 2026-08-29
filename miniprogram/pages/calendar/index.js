@@ -15,7 +15,6 @@ Page({
     todayLogs: [],
     todaySportsLogs: [],
     quickRules: [],
-    selectedDrawPeople: [],
     selectedDateTitle: ""
   },
 
@@ -67,7 +66,6 @@ Page({
       creditType: rule.creditType,
       tone: Number(String(rule.value).match(/[-+]?\d+/)?.[0] || 0) < 0 ? "minus" : "plus"
     }));
-    const selectedDraw = this.drawForDay(safeState, selectedDay, calendarYear, calendarMonth);
     this.setData({
       dateText: this.formatDate(),
       selectedDay,
@@ -84,15 +82,6 @@ Page({
       todaySportsLogs: this.sportsLogsForDay(safeState, selectedDay, calendarYear, calendarMonth).map((log) => ({
         ...log,
         displayPerson: safeState.people.find((person) => person.name === log.person)?.displayName || log.person
-      })),
-      selectedDrawPeople: (safeState.people || []).map((person) => ({
-        name: person.name,
-        displayName: person.displayName || person.name,
-        image: person.image,
-        bears: (selectedDraw?.assignments?.[person.name] || []).map((bearName) => ({
-          name: bearName,
-          image: safeState.bears.find((bear) => bear.name === bearName)?.image || ""
-        }))
       })),
       selectedDateTitle: `${calendarMonth + 1}月${selectedDay}日`,
       quickRules

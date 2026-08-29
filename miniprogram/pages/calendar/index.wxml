@@ -45,20 +45,6 @@
   </view>
 
   <view class="soft-card section record-card">
-    <text class="section-title">当天小熊</text>
-    <view class="draw-history-person" wx:for="{{selectedDrawPeople}}" wx:key="name">
-      <view class="draw-history-head">
-        <image src="{{item.image}}" mode="aspectFit" />
-        <text>{{item.displayName}}</text>
-      </view>
-      <view class="draw-history-bears">
-        <view class="history-bear" wx:for="{{item.bears}}" wx:for-item="bear" wx:key="name">
-          <image src="{{bear.image}}" mode="aspectFit" />
-          <text>{{bear.name}}</text>
-        </view>
-        <text wx:if="{{!item.bears.length}}" class="muted">这一天没有保存小熊结果</text>
-      </view>
-    </view>
     <text class="section-title">{{selectedDateTitle}}家务</text>
     <view class="log-line {{item.delta < 0 ? 'minus-log' : ''}}" wx:for="{{todayLogs}}" wx:key="index">
       <text>{{item.displayPerson || item.person}} · {{item.type}}</text>
