@@ -72,6 +72,7 @@ const state = {
 
 const REMOVED_BEAR_NAMES = new Set(["拖拉机"]);
 const DEFAULT_FALLBACK_BEAR = "史迪奇";
+const SHANSHANYU_WISH_HIT_RATE = 0.7;
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -445,6 +446,20 @@ function drawForDate(dateKey) {
   return null;
 }
 
+function takeBear(remaining, bearName) {
+  const index = remaining.indexOf(bearName);
+  if (index < 0) return null;
+  const [picked] = remaining.splice(index, 1);
+  return picked;
+}
+
+function pickRandomBear(remaining, random) {
+  if (!remaining.length) return null;
+  const index = Math.floor(random() * remaining.length);
+  const [picked] = remaining.splice(index, 1);
+  return picked;
+}
+
 function runDraw(seedText) {
   const random = seededRandom(hashString(seedText));
   const first = state.people[0];
@@ -452,30 +467,26 @@ function runDraw(seedText) {
   const remaining = activeBears().map((bear) => bear.name);
   const firstBears = [];
   const firstTarget = Math.ceil(remaining.length / 2);
+  const shanshanyu = personByName("闪闪鱼") || first;
+
+  if (
+    first.name === shanshanyu.name &&
+    remaining.includes(shanshanyu.wishBear) &&
+    random() < SHANSHANYU_WISH_HIT_RATE
+  ) {
+    firstBears.push(takeBear(remaining, shanshanyu.wishBear));
+  }
 
   while (firstBears.length < firstTarget && remaining.length) {
-    const weighted = remaining.map((bearName) => {
-      let weight = 1;
-      if (first.wishBear !== second.wishBear && bearName === first.wishBear) weight = 1.25;
-      if (first.wishBear !== second.wishBear && bearName === second.wishBear) weight = 0.75;
-      return { bearName, weight };
-    });
-    const total = weighted.reduce((sum, item) => sum + item.weight, 0);
-    let cursor = random() * total;
-    let picked = weighted[0].bearName;
-    for (const item of weighted) {
-      cursor -= item.weight;
-      if (cursor <= 0) {
-        picked = item.bearName;
-        break;
-      }
-    }
+    const picked = pickRandomBear(remaining, random);
+    if (!picked) break;
     firstBears.push(picked);
-    remaining.splice(remaining.indexOf(picked), 1);
   }
 
   return {
     seed: seedText,
+    shanshanyuWishHitRate: SHANSHANYU_WISH_HIT_RATE,
+    rule: "shanshanyu-wish-70",
     checksum: hashString(`${seedText}:${firstBears.join("|")}:${remaining.join("|")}`)
       .toString(16)
       .toUpperCase()

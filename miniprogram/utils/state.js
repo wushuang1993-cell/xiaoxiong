@@ -53,6 +53,7 @@ const BEAR_IMAGE_BY_NAME = {
 };
 
 const REMOVED_BEAR_NAMES = ["拖拉机"];
+const SHANSHANYU_WISH_HIT_RATE = 0.7;
 
 const PERSON_IMAGE_BY_NAME = {
   闪闪鱼: "../../assets/shanshanyu.png",
@@ -368,26 +369,26 @@ function activeBears(state) {
   return (state.bears || []).filter((bear) => bear.active !== false).slice(0, 6);
 }
 
-function randomIndexByWeight(items, weightForItem) {
-  const weights = items.map((item) => Math.max(0, Number(weightForItem(item)) || 0));
-  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-  let cursor = Math.random() * totalWeight;
-
-  for (let index = 0; index < items.length; index += 1) {
-    cursor -= weights[index];
-    if (cursor <= 0) return index;
-  }
-
-  return items.length - 1;
-}
-
 function shuffledPeople(people) {
   return [...people].sort(() => Math.random() - 0.5);
 }
 
+function takeBear(remainingBears, bearName) {
+  const index = remainingBears.indexOf(bearName);
+  if (index < 0) return null;
+  const [picked] = remainingBears.splice(index, 1);
+  return picked;
+}
+
+function takeRandomBear(remainingBears) {
+  if (!remainingBears.length) return null;
+  const index = Math.floor(Math.random() * remainingBears.length);
+  const [picked] = remainingBears.splice(index, 1);
+  return picked;
+}
+
 function drawBears(state) {
   const seed = `wx-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
-  const wishBoost = 1.12;
   const remainingBears = activeBears(state).map((bear) => bear.name);
   const people = shuffledPeople(state.people || DEFAULT_STATE.people);
   const baseQuota = Math.floor(remainingBears.length / people.length);
@@ -396,22 +397,35 @@ function drawBears(state) {
     result[person.name] = [];
     return result;
   }, {});
+  const quotaByPerson = people.reduce((result, person, personIndex) => {
+    result[person.name] = baseQuota + (personIndex < extraQuota ? 1 : 0);
+    return result;
+  }, {});
+  const shanshanyu = (state.people || DEFAULT_STATE.people).find((person) => person.name === "闪闪鱼");
+
+  if (
+    shanshanyu &&
+    quotaByPerson[shanshanyu.name] > 0 &&
+    remainingBears.includes(shanshanyu.wishBear) &&
+    Math.random() < SHANSHANYU_WISH_HIT_RATE
+  ) {
+    assignments[shanshanyu.name].push(takeBear(remainingBears, shanshanyu.wishBear));
+  }
 
   people.forEach((person, personIndex) => {
-    const quota = baseQuota + (personIndex < extraQuota ? 1 : 0);
+    const quota = quotaByPerson[person.name];
     for (let count = 0; count < quota && remainingBears.length; count += 1) {
-      const selectedIndex = randomIndexByWeight(remainingBears, (bearName) =>
-        bearName === person.wishBear ? wishBoost : 1
-      );
-      const [selectedBear] = remainingBears.splice(selectedIndex, 1);
+      if ((assignments[person.name] || []).length >= quota) break;
+      const selectedBear = takeRandomBear(remainingBears);
+      if (!selectedBear) break;
       assignments[person.name].push(selectedBear);
     }
   });
 
   return {
     seed,
-    wishBoost,
-    rule: "weighted-random",
+    shanshanyuWishHitRate: SHANSHANYU_WISH_HIT_RATE,
+    rule: "shanshanyu-wish-70",
     assignments
   };
 }
