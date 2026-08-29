@@ -18,8 +18,8 @@
           <image class="person-avatar" src="{{item.image}}" mode="aspectFit" />
         </view>
         <view>
-          <text class="name">{{item.name}}</text>
-          <text class="coin">{{item.coins}} 金币</text>
+          <text class="name">{{item.displayName || item.name}}</text>
+          <text class="coin">{{item.chanceText}}</text>
         </view>
       </view>
       <view class="bear-row">
@@ -48,15 +48,18 @@
       <view class="pending-copy">
         <view class="pending-headline">
           <text class="pending-title">{{pendingNotice.title}}</text>
-          <text class="pending-highlight">{{pendingNotice.applicant}}</text>
+          <text class="pending-highlight">{{pendingNotice.applicantDisplay || pendingNotice.applicant}}</text>
         </view>
         <text class="pending-detail">{{pendingNotice.detail}}</text>
       </view>
     </view>
-    <view wx:if="{{pendingNotice.mine}}" class="pending-status">等待对方同意</view>
+    <view wx:if="{{pendingNotice.mine}}" class="pending-actions">
+      <view class="pending-button cancel" bindtap="cancelPending">取消</view>
+      <view class="pending-button wait">无需对方同意</view>
+    </view>
     <view wx:else class="pending-actions">
-      <view class="pending-button approve" bindtap="approvePending">同意</view>
       <view class="pending-button reject" bindtap="rejectPending">拒绝</view>
+      <view class="pending-button approve" bindtap="approvePending">同意</view>
     </view>
   </view>
 
@@ -71,15 +74,17 @@
   <view wx:if="{{showExchangePicker}}" class="picker-mask">
     <view class="picker-sheet soft-card">
       <view class="picker-top">
-        <text class="picker-title">{{exchangePickerTitle}}</text>
+      <text class="picker-title">{{exchangePickerTitle}}</text>
         <view class="picker-close" bindtap="closeExchangePicker">×</view>
       </view>
+      <text wx:if="{{exchangePickerMode === 'exchange'}}" class="picker-note">会消耗 1 次申请兑换机会，并直接完成兑换。</text>
       <view class="picker-grid">
-        <view class="picker-bear" wx:for="{{exchangeChoices}}" wx:key="name" data-name="{{item.name}}" bindtap="chooseExchangeBear">
+        <view class="picker-bear {{auctionTargetBear === item.name ? 'active' : ''}}" wx:for="{{exchangeChoices}}" wx:key="name" data-name="{{item.name}}" bindtap="chooseExchangeBear">
           <image src="{{item.image}}" mode="aspectFit" />
           <text>{{item.name}}</text>
         </view>
       </view>
+      <button wx:if="{{exchangePickerMode === 'exchange'}}" class="button" bindtap="confirmExchange">确认直接兑换</button>
     </view>
   </view>
 

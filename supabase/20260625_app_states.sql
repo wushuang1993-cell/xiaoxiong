@@ -27,3 +27,19 @@ on public.app_states for update
 to authenticated
 using (key = 'home')
 with check (key = 'home');
+
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "avatars readable by everyone" on storage.objects;
+drop policy if exists "avatars uploadable by signed in users" on storage.objects;
+
+create policy "avatars readable by everyone"
+on storage.objects for select
+using (bucket_id = 'avatars');
+
+create policy "avatars uploadable by signed in users"
+on storage.objects for insert
+to authenticated
+with check (bucket_id = 'avatars');

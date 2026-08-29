@@ -7,14 +7,12 @@ const RULE_GROUPS = [
   { key: "drink", label: "饮品", title: "饮品" }
 ];
 
-const EMAIL_LOGIN_MAP = {
-  "shuang@xyyws.cn": "闪闪鱼",
-  "alan@xyyws.cn": "杰尼龟"
-};
-
-function amountToValue(amount) {
+function amountToValue(amount, groupKey) {
   const value = Number(amount || 0);
-  return `${value > 0 ? "+" : ""}${value} 金币`;
+  if (groupKey === "bonus") return "+1 申请兑换";
+  if (groupKey === "penalty") return "-1 申请重抽";
+  if (groupKey === "base") return "+1 申请重抽";
+  return `${value > 0 ? "+" : ""}${value}`;
 }
 
 function decorateRules(rules = []) {
@@ -29,12 +27,11 @@ Page({
   data: {
     state: DEFAULT_STATE,
     currentUser: "闪闪鱼",
-    currentEmail: "",
+    currentOpenid: "",
     isLoggedIn: false,
     loginSummary: "闪闪鱼",
     loginAvatar: "../../assets/shanshanyu.png",
-    loginEmailText: "",
-    loginEmail: "",
+    displayNameInput: "",
     ruleGroups: RULE_GROUPS,
     editingRuleGroupIndex: 0,
     selectedRuleGroupLabel: RULE_GROUPS[0].label,
@@ -48,24 +45,47 @@ Page({
   },
 
   onShow() {
+    this.showShare();
     const app = getApp();
     const currentUser = app.globalData.currentUser || "闪闪鱼";
-    const currentEmail = app.globalData.currentEmail || "";
+    const currentOpenid = app.globalData.currentOpenid || "";
     this.setData({
       currentUser,
-      currentEmail,
-      isLoggedIn: Boolean(currentEmail),
-      loginSummary: currentEmail ? `${currentUser}已登录` : "输入固定邮箱登录",
+      currentOpenid,
+      isLoggedIn: Boolean(currentOpenid),
+      loginSummary: currentOpenid ? `${this.displayNameForUser(currentUser)}已登录` : "微信登录",
       loginAvatar: this.avatarForUser(currentUser),
-      loginEmailText: currentEmail,
-      loginEmail: currentEmail
+      displayNameInput: this.displayNameForUser(currentUser)
     });
     this.refresh();
+  },
+
+  onShareAppMessage() {
+    return {
+      title: "小熊 App 家庭设置",
+      path: "/pages/rules/index"
+    };
+  },
+
+  onShareTimeline() {
+    return {
+      title: "小熊 App 家庭设置"
+    };
+  },
+
+  showShare() {
+    if (!wx.showShareMenu) return;
+    wx.showShareMenu({ menus: ["shareAppMessage", "shareTimeline"] });
   },
 
   avatarForUser(userName) {
     const person = this.data.state.people.find((item) => item.name === userName);
     return person?.image || (userName === "杰尼龟" ? "../../assets/jienigui.png" : "../../assets/shanshanyu.png");
+  },
+
+  displayNameForUser(userName) {
+    const person = this.data.state.people.find((item) => item.name === userName);
+    return person?.displayName || userName;
   },
 
   async refresh() {
@@ -83,6 +103,7 @@ Page({
     this.setData({
       state: safeState,
       loginAvatar: this.data.isLoggedIn ? loginPerson?.image || this.avatarForUser(this.data.currentUser) : this.data.loginAvatar,
+      displayNameInput: loginPerson?.displayName || this.data.currentUser,
       ruleSections: RULE_GROUPS.map((group) => ({
         ...group,
         rules: decorateRules(safeState.rules[group.key] || [])
@@ -90,9 +111,9 @@ Page({
     });
   },
 
-  async persist(nextState, message) {
+  async persist(nextState, message, mergeOptions = {}) {
     try {
-      await saveState(normalizeState(nextState));
+      await saveState(normalizeState(nextState), mergeOptions);
       this.renderState(nextState);
       this.syncLoginAvatar(nextState);
       wx.showToast({ title: message, icon: "none" });
@@ -108,14 +129,66 @@ Page({
     this.setData({ loginAvatar: person?.image || this.avatarForUser(this.data.currentUser) });
   },
 
+  callLoginFunction() {
+    if (!wx.cloud?.callFunction) return Promise.reject(new Error("当前基础库不支持云开发登录"));
+    return wx.cloud.callFunction({
+      name: "state",
+      data: { action: "login" }
+    }).then((result) => {
+      if (!result?.result?.ok || !result.result.openid) {
+        throw new Error(result?.result?.message || "微信登录失败");
+      }
+      return result.result;
+    });
+  },
+
   chooseImagePath() {
     return new Promise((resolve, reject) => {
       wx.chooseImage({
         count: 1,
         sizeType: ["compressed"],
         sourceType: ["album", "camera"],
-        success: (result) => resolve(result.tempFilePaths?.[0]),
+        success: async (result) => {
+          try {
+            const tempFilePath = result.tempFilePaths?.[0];
+            const tempFile = result.tempFiles?.[0];
+            await this.validateImagePath(tempFilePath, tempFile?.size || 0);
+            resolve(tempFilePath);
+          } catch (error) {
+            reject(error);
+          }
+        },
         fail: reject
+      });
+    });
+  },
+
+  validateImagePath(tempFilePath, size = 0) {
+    if (!tempFilePath) return Promise.reject(new Error("未选择图片"));
+    const extension = String(tempFilePath).match(/\.([a-zA-Z0-9]+)(?:\?|$)/)?.[1]?.toLowerCase();
+    if (extension && !["png", "jpg", "jpeg"].includes(extension)) {
+      wx.showModal({ title: "图片格式不支持", content: "请上传 PNG、JPG 或 JPEG 图片", showCancel: false });
+      return Promise.reject(new Error("图片格式不支持"));
+    }
+    if (size > 2 * 1024 * 1024) {
+      wx.showModal({ title: "图片太大", content: "图片不能超过 2MB", showCancel: false });
+      return Promise.reject(new Error("图片太大"));
+    }
+    return new Promise((resolve) => {
+      wx.getImageInfo({
+        src: tempFilePath,
+        success: (info) => {
+          const width = Number(info.width || 0);
+          const height = Number(info.height || 0);
+          if (width && height) {
+            const ratio = width > height ? width / height : height / width;
+            if (ratio > 1.15) {
+              wx.showToast({ title: "建议上传正方形图片", icon: "none" });
+            }
+          }
+          resolve();
+        },
+        fail: () => resolve()
       });
     });
   },
@@ -198,50 +271,117 @@ Page({
     }
   },
 
-  onEmailInput(event) {
-    const email = event.detail.value.trim().toLowerCase();
-    this.setData({ loginEmail: email });
-  },
-
-  submitLogin() {
-    const email = String(this.data.loginEmail || "").trim().toLowerCase();
-    if (!EMAIL_LOGIN_MAP[email]) {
-      wx.showToast({ title: "邮箱未绑定", icon: "none" });
+  saveDisplayName(displayName) {
+    if (!this.data.isLoggedIn) return;
+    const nextDisplayName = String(displayName || "").trim();
+    if (!nextDisplayName) {
+      wx.showToast({ title: "登录名不能为空", icon: "none" });
       return;
     }
-    this.loginWithEmail(email);
+    const nextState = normalizeState(this.data.state);
+    const person = nextState.people.find((item) => item.name === this.data.currentUser);
+    if (!person) return;
+    person.displayName = nextDisplayName;
+    nextState.actions = addAction(nextState, this.data.currentUser, "修改显示名", nextDisplayName);
+    this.persist(nextState, "登录名已更新");
   },
 
-  loginWithEmail(email) {
-    const userName = EMAIL_LOGIN_MAP[email];
+  editDisplayName() {
+    if (!this.data.isLoggedIn) return;
+    wx.showModal({
+      title: "修改登录名",
+      editable: true,
+      placeholderText: "最多 8 个字",
+      content: this.data.displayNameInput || this.data.currentUser,
+      success: (result) => {
+        if (!result.confirm) return;
+        this.saveDisplayName(String(result.content || "").slice(0, 8));
+      }
+    });
+  },
+
+  async submitWechatLogin() {
+    try {
+      wx.showLoading({ title: "登录中" });
+      const login = await this.callLoginFunction();
+      const safeState = normalizeState(this.data.state);
+      const matched = safeState.people.find((person) => person.openid === login.openid);
+      wx.hideLoading();
+      if (matched) {
+        this.loginAsPerson(matched.name, login.openid, safeState);
+        return;
+      }
+      this.bindWechatIdentity(login.openid, safeState);
+    } catch (error) {
+      wx.hideLoading();
+      console.warn("[微信登录失败]", error);
+      wx.showToast({ title: error.message || "微信登录失败", icon: "none" });
+    }
+  },
+
+  bindWechatIdentity(openid, state) {
+    const candidates = (state.people || []).filter((person) => !person.openid);
+    const itemList = [...candidates.map((person) => `绑定 ${person.displayName || person.name}`), "新增运动成员"];
+    wx.showActionSheet({
+      itemList,
+      success: (result) => {
+        const nextState = normalizeState(state);
+        let userName = "";
+        if (result.tapIndex < candidates.length) {
+          const target = nextState.people.find((person) => person.name === candidates[result.tapIndex].name);
+          if (!target) return;
+          target.openid = openid;
+          userName = target.name;
+          nextState.actions = addAction(nextState, userName, "绑定微信登录", target.displayName || target.name);
+        } else {
+          const index = nextState.people.length + 1;
+          userName = `成员${index}`;
+          const firstBear = nextState.bears?.[0]?.name || "史迪奇";
+          nextState.people.push({
+            name: userName,
+            displayName: userName,
+            openid,
+            coins: 0,
+            wishBear: firstBear,
+            image: "../../assets/shanshanyu.png"
+          });
+          nextState.actions = addAction(nextState, userName, "新增微信成员", userName);
+        }
+        this.persist(nextState, "微信已绑定");
+        this.loginAsPerson(userName, openid, nextState);
+      }
+    });
+  },
+
+  loginAsPerson(userName, openid, state = this.data.state) {
     const app = getApp();
     app.globalData.currentUser = userName;
-    app.globalData.currentEmail = email;
-    wx.setStorageSync("bearAppLogin", { userName, email });
+    app.globalData.currentOpenid = openid;
+    wx.setStorageSync("bearAppLogin", { userName, openid });
+    const person = normalizeState(state).people.find((item) => item.name === userName);
     this.setData({
       currentUser: userName,
-      currentEmail: email,
+      currentOpenid: openid,
       isLoggedIn: true,
-      loginSummary: `${userName}已登录`,
-      loginAvatar: this.avatarForUser(userName),
-      loginEmailText: email
+      loginSummary: `${person?.displayName || userName}已登录`,
+      loginAvatar: person?.image || this.avatarForUser(userName),
+      displayNameInput: person?.displayName || userName
     });
-    wx.showToast({ title: `已登录${userName}`, icon: "none" });
+    wx.showToast({ title: "微信登录成功", icon: "none" });
   },
 
   logout() {
     const app = getApp();
     app.globalData.currentUser = "闪闪鱼";
-    app.globalData.currentEmail = "";
+    app.globalData.currentOpenid = "";
     wx.removeStorageSync("bearAppLogin");
     this.setData({
       currentUser: "闪闪鱼",
-      currentEmail: "",
+      currentOpenid: "",
       isLoggedIn: false,
-      loginSummary: "输入固定邮箱登录",
+      loginSummary: "微信登录",
       loginAvatar: "../../assets/shanshanyu.png",
-      loginEmailText: "",
-      loginEmail: ""
+      displayNameInput: ""
     });
     wx.showToast({ title: "已退出", icon: "none" });
   },
@@ -269,7 +409,7 @@ Page({
     const amountText = String(this.data.ruleAmount).trim();
     const amount = Number(amountText);
     if (!name || !/^-?\d+$/.test(amountText) || amount === 0) {
-      wx.showToast({ title: "填写名称和金币", icon: "none" });
+      wx.showToast({ title: "填写名称和次数", icon: "none" });
       return;
     }
     const groupKey = RULE_GROUPS[this.data.editingRuleGroupIndex].key;
@@ -281,8 +421,8 @@ Page({
       wx.showToast({ title: "规则已存在", icon: "none" });
       return;
     }
-    nextState.rules[groupKey].push({ label: name, value: amountToValue(amount) });
-    nextState.actions = addAction(nextState, currentUser, "新增金币规则", name);
+    nextState.rules[groupKey].push({ label: name, value: amountToValue(amount, groupKey) });
+    nextState.actions = addAction(nextState, currentUser, "新增机会规则", name);
     this.setData({ ruleName: "", ruleAmount: "" });
     this.persist(nextState, "已新增规则");
   },
@@ -292,8 +432,8 @@ Page({
     const currentUser = getApp().globalData.currentUser || "闪闪鱼";
     const nextState = normalizeState(this.data.state);
     nextState.rules[group] = (nextState.rules[group] || []).filter((rule) => rule.label !== label);
-    nextState.actions = addAction(nextState, currentUser, "删除金币规则", label);
-    this.persist(nextState, "已删除");
+    nextState.actions = addAction(nextState, currentUser, "删除机会规则", label);
+    this.persist(nextState, "已删除", { deletedRules: [{ group, label }] });
   },
 
   onBearNameInput(event) {
@@ -410,7 +550,7 @@ Page({
         latestState.bears = latestState.bears.filter((item) => item.name !== name);
         this.removeBearEverywhere(latestState, name);
         latestState.actions = addAction(latestState, getApp().globalData.currentUser || "未登录", "删除小熊", name);
-        this.persist(latestState, "已删除小熊");
+        this.persist(latestState, "已删除小熊", { deletedBears: [name] });
       }
     });
   },

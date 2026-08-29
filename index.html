@@ -61,8 +61,8 @@
 
       <section class="screen" id="screen-stats" aria-labelledby="statsTitle">
         <header class="screen-head">
-          <h1 id="statsTitle">积分统计</h1>
-          <p class="date-line">本月记录</p>
+          <h1 id="statsTitle">机会统计</h1>
+          <p class="date-line">本月记录和小熊历史</p>
         </header>
 
         <section class="calendar-card" id="calendarCard">
@@ -100,7 +100,7 @@
         </button>
         <button class="bottom-tab" data-view="stats" type="button">
           <span>＋</span>
-          <strong>积分</strong>
+          <strong>统计</strong>
         </button>
         <button class="bottom-tab" data-view="rules" type="button">
           <span>◎</span>
@@ -115,7 +115,7 @@
         <h2 id="exchangeTitle">选择要兑换的小熊</h2>
         <p class="sheet-note" id="exchangeNote"></p>
         <div class="exchange-options" id="exchangeOptions"></div>
-        <button class="primary-button" id="confirmExchange" type="button">确认并发起申请</button>
+        <button class="primary-button" id="confirmExchange" type="button">确认直接兑换</button>
         <button class="plain-button" data-close-sheet="exchangeSheet" type="button">取消</button>
       </section>
     </div>
@@ -156,7 +156,7 @@
     <div class="sheet-backdrop hidden" id="ruleSheet" role="dialog" aria-modal="true" aria-labelledby="ruleSheetTitle">
       <section class="bottom-sheet">
         <div class="sheet-handle"></div>
-        <h2 id="ruleSheetTitle">金币规则</h2>
+        <h2 id="ruleSheetTitle">机会规则</h2>
         <div class="editor-form">
           <label>
             <span>规则名称</span>
@@ -172,7 +172,7 @@
             </select>
           </label>
           <label>
-            <span>加减金币</span>
+            <span>加减次数</span>
             <input id="ruleAmountInput" type="number" min="-99" max="99" />
           </label>
         </div>
@@ -210,10 +210,10 @@
     <div class="sheet-backdrop hidden" id="approvalSheet" role="dialog" aria-modal="true" aria-labelledby="approvalTitle">
       <section class="bottom-sheet">
         <div class="sheet-handle"></div>
-        <h2 id="approvalTitle">同意兑换</h2>
+        <h2 id="approvalTitle">兑换小熊</h2>
         <p class="sheet-note" id="approvalNote"></p>
         <div class="exchange-options" id="approvalOptions"></div>
-        <button class="primary-button" id="confirmApproval" type="button">确认同意</button>
+        <button class="primary-button" id="confirmApproval" type="button">确认兑换</button>
         <button class="plain-button" data-close-sheet="approvalSheet" type="button">取消</button>
       </section>
     </div>

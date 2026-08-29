@@ -1,0 +1,214 @@
+.sports-screen {
+  padding-top: 30rpx;
+}
+
+.head {
+  margin-bottom: 22rpx;
+}
+
+.title {
+  margin-top: 10rpx;
+  font-size: 48rpx;
+  font-weight: 800;
+}
+
+.section-title {
+  display: block;
+  color: #4d3a32;
+  font-size: 34rpx;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.section-note {
+  display: block;
+  margin-top: 8rpx;
+  color: #9a8c81;
+  font-size: 26rpx;
+  line-height: 1.35;
+}
+
+.hero-sport,
+.section {
+  margin-top: 24rpx;
+  padding: 28rpx;
+}
+
+.hero-sport {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  background: linear-gradient(120deg, #fff3d8 0%, #e8f5df 100%);
+}
+
+.small-button {
+  flex: 0 0 auto;
+  min-width: 150rpx;
+  height: 64rpx;
+  margin: 0;
+  padding: 0 18rpx;
+  border-radius: 999rpx;
+  background: #ffe6b9;
+  color: #8a6130;
+  font-size: 26rpx;
+  line-height: 64rpx;
+}
+
+.small-button::after {
+  border: 0;
+}
+
+.ranking-list {
+  display: grid;
+  gap: 16rpx;
+  margin-top: 14rpx;
+}
+
+.rank-title {
+  margin: 24rpx 4rpx 0;
+  color: #7c6759;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.rank-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22rpx;
+}
+
+.rank-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.rank-left image,
+.person-pill image {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.9), transparent 38%),
+    linear-gradient(135deg, #fff7e5 0%, #eaf6ef 100%);
+}
+
+.rank-name {
+  display: block;
+  color: #5b4942;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.rank-score {
+  min-width: 86rpx;
+  height: 58rpx;
+  border-radius: 999rpx;
+  background: #82b58a;
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 800;
+  line-height: 58rpx;
+  text-align: center;
+}
+
+.rank-score.steps {
+  min-width: 130rpx;
+  background: #dfa044;
+}
+
+.section-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.person-switch {
+  display: flex;
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.person-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  min-height: 90rpx;
+  border-radius: 24rpx;
+  background: #f8f0e3;
+  color: #6d5147;
+  font-size: 28rpx;
+}
+
+.person-pill.active {
+  background: #ffe6b9;
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 84rpx;
+  margin-top: 16rpx;
+  padding: 0 24rpx;
+  border-radius: 20rpx;
+  background: #f8f0e3;
+  color: #4d3a32;
+  font-size: 29rpx;
+}
+
+.picker-field {
+  display: flex;
+  align-items: center;
+}
+
+.button {
+  margin-top: 18rpx;
+}
+
+.button.secondary {
+  background: #82b58a;
+}
+
+.sport-rule-editor {
+  margin-top: 20rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid rgba(120, 98, 80, 0.08);
+}
+
+.sport-rule-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64rpx;
+  color: #5b4942;
+  font-size: 28rpx;
+}
+
+.delete-link {
+  width: 50rpx;
+  height: 50rpx;
+  border-radius: 50%;
+  background: #fae3e7;
+  color: #c76578;
+  line-height: 50rpx;
+  text-align: center;
+  font-size: 34rpx;
+}
+
+.sport-log {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 62rpx;
+  color: #5b4942;
+  font-size: 28rpx;
+}
+
+.empty {
+  margin-top: 16rpx;
+}

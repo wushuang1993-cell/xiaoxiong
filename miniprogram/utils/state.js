@@ -1,11 +1,10 @@
 const DEFAULT_STATE = {
   people: [
-    { name: "闪闪鱼", coins: 0, wishBear: "史迪奇", image: "../../assets/shanshanyu.png" },
-    { name: "杰尼龟", coins: 0, wishBear: "卢卡斯", image: "../../assets/jienigui.png" }
+    { name: "闪闪鱼", displayName: "闪闪鱼", openid: "", coins: 0, redrawChances: 0, exchangeChances: 0, wishBear: "史迪奇", image: "../../assets/shanshanyu.png" },
+    { name: "杰尼龟", displayName: "杰尼龟", openid: "", coins: 0, redrawChances: 0, exchangeChances: 0, wishBear: "卢卡斯", image: "../../assets/jienigui.png" }
   ],
   bears: [
     { name: "史迪奇", image: "../../assets/stitch.png", active: true },
-    { name: "拖拉机", image: "../../assets/tractor.png", active: true },
     { name: "芭芭拉", image: "../../assets/barbara.png", active: true },
     { name: "卢卡斯", image: "../../assets/lucas.png", active: true },
     { name: "马里奥", image: "../../assets/mario.png", active: true },
@@ -13,34 +12,47 @@ const DEFAULT_STATE = {
   ],
   draw: null,
   drawUsed: false,
+  drawHistory: {},
   todayId: "",
+  pendingAuction: null,
   actions: [],
   logs: {},
+  sportsLogs: {},
+  wechatSteps: {},
+  sportRules: [
+    { key: "run", label: "跑步", rate: 1.2 },
+    { key: "walk", label: "快走", rate: 0.8 },
+    { key: "ride", label: "骑行", rate: 0.7 },
+    { key: "swim", label: "游泳", rate: 1.4 },
+    { key: "strength", label: "力量", rate: 1 },
+    { key: "yoga", label: "瑜伽", rate: 0.6 },
+    { key: "ball", label: "球类", rate: 1.1 }
+  ],
   rules: {
     base: [
-      { label: "做饭", value: "+1 金币" },
-      { label: "洗衣服", value: "+1 金币" },
-      { label: "倒垃圾", value: "+1 金币" }
+      { label: "做饭", value: "+1 申请重抽" },
+      { label: "洗衣服", value: "+1 申请重抽" },
+      { label: "倒垃圾", value: "+1 申请重抽" }
     ],
     bonus: [
-      { label: "帮对方设计封面图", value: "+3 金币" },
-      { label: "帮对方提供工作建议", value: "+2 金币" },
-      { label: "运动", value: "+1 金币" }
+      { label: "帮对方设计封面图", value: "+1 申请兑换" },
+      { label: "帮对方提供工作建议", value: "+1 申请兑换" }
     ],
     penalty: [
-      { label: "未完成基础家务", value: "-1 金币" }
+      { label: "未完成基础家务", value: "-1 申请重抽" }
     ]
   }
 };
 
 const BEAR_IMAGE_BY_NAME = {
   史迪奇: "../../assets/stitch.png",
-  拖拉机: "../../assets/tractor.png",
   芭芭拉: "../../assets/barbara.png",
   卢卡斯: "../../assets/lucas.png",
   马里奥: "../../assets/mario.png",
   爱丽丝: "../../assets/alice.png"
 };
+
+const REMOVED_BEAR_NAMES = ["拖拉机"];
 
 const PERSON_IMAGE_BY_NAME = {
   闪闪鱼: "../../assets/shanshanyu.png",
@@ -77,11 +89,23 @@ function isLogActive(logDate, today = new Date()) {
 function normalizeLog(log, fallbackDay) {
   const logDate = parseLogDate(log, fallbackDay);
   const dateKey = formatDateKey(logDate);
+  const createdAt = log.createdAt || `${dateKey}T00:00:00.000Z`;
+  const stableId = [
+    "log",
+    dateKey,
+    fallbackDay || logDate.getDate(),
+    log.person || "",
+    log.type || "",
+    log.detail || "",
+    log.delta || 0,
+    createdAt
+  ].join("-");
   return {
     ...log,
+    id: log.id || stableId,
     date: log.date || dateKey,
     earnedDay: log.earnedDay || logDate.getDate(),
-    createdAt: log.createdAt || new Date().toISOString()
+    createdAt
   };
 }
 
@@ -92,25 +116,105 @@ function normalizeLogs(logs = {}) {
   }, {});
 }
 
-function calculateCoins(people, logs) {
-  const today = new Date();
+function normalizeSportsLog(log, fallbackDay) {
+  const logDate = parseLogDate(log, fallbackDay);
+  const dateKey = formatDateKey(logDate);
+  const createdAt = log.createdAt || `${dateKey}T00:00:00.000Z`;
+  const stableId = [
+    "sport",
+    dateKey,
+    fallbackDay || logDate.getDate(),
+    log.person || "",
+    log.type || "",
+    log.duration || 0,
+    log.steps || 0,
+    createdAt
+  ].join("-");
+  return {
+    ...log,
+    id: log.id || stableId,
+    date: log.date || dateKey,
+    earnedDay: log.earnedDay || logDate.getDate(),
+    duration: Number(log.duration || 0),
+    steps: Number(log.steps || 0),
+    score: Number(log.score || 0),
+    createdAt
+  };
+}
+
+function normalizeSportsLogs(logs = {}) {
+  return Object.keys(logs).reduce((nextLogs, day) => {
+    nextLogs[day] = (logs[day] || []).map((log) => normalizeSportsLog(log, day));
+    return nextLogs;
+  }, {});
+}
+
+function normalizeWechatSteps(steps = {}) {
+  return Object.keys(steps || {}).reduce((result, day) => {
+    result[day] = (steps[day] || []).map((item) => ({
+      ...item,
+      id: item.id || `steps-${item.date || day}-${item.person || ""}`,
+      steps: Number(item.steps || 0),
+      date: item.date || item.day || formatDateKey(),
+      createdAt: item.createdAt || new Date().toISOString()
+    }));
+    return result;
+  }, {});
+}
+
+function ruleAmount(rule) {
+  const match = String(rule?.value || "").match(/[-+]?\d+/);
+  return match ? Number(match[0]) : 0;
+}
+
+function chanceLabel(creditType) {
+  return creditType === "exchange" ? "申请兑换" : "申请重抽";
+}
+
+function ruleValue(amount, creditType) {
+  return `${amount > 0 ? "+" : ""}${amount} ${chanceLabel(creditType)}`;
+}
+
+function normalizeRules(rules = DEFAULT_STATE.rules) {
+  const nextRules = {
+    ...DEFAULT_STATE.rules,
+    ...(rules || {})
+  };
+  return {
+    ...nextRules,
+    base: (nextRules.base || []).map((rule) => ({ ...rule, value: ruleValue(1, "redraw") })),
+    bonus: (nextRules.bonus || []).filter((rule) => rule.label !== "运动").map((rule) => ({ ...rule, value: ruleValue(1, "exchange") })),
+    penalty: (nextRules.penalty || []).map((rule) => ({ ...rule, value: ruleValue(-1, "redraw") }))
+  };
+}
+
+function creditTypeForLog(log) {
+  if (log?.creditType) return log.creditType;
+  if (log?.type === "增值家务" || log?.type === "兑换小熊") return "exchange";
+  if (["家务", "基础家务", "扣分", "重新抽签", "重抽"].includes(log?.type)) return "redraw";
+  return null;
+}
+
+function calculateChances(people, logs) {
   const totals = people.reduce((result, person) => {
-    result[person.name] = 0;
+    result[person.name] = { redraw: 0, exchange: 0 };
     return result;
   }, {});
 
   Object.keys(logs || {}).forEach((day) => {
     (logs[day] || []).forEach((log) => {
-      const logDate = parseLogDate(log, day);
-      if (!isLogActive(logDate, today)) return;
       if (!Object.prototype.hasOwnProperty.call(totals, log.person)) return;
-      totals[log.person] += Number(log.delta || 0);
+      const creditType = creditTypeForLog(log);
+      if (!creditType) return;
+      totals[log.person][creditType] += Number(log.delta || 0);
     });
   });
 
   return people.map((person) => ({
     ...person,
-    coins: totals[person.name] || 0
+    coins: 0,
+    redrawChances: Math.max(0, totals[person.name]?.redraw || 0),
+    exchangeChances: Math.max(0, totals[person.name]?.exchange || 0)
   }));
 }
 
@@ -177,44 +281,86 @@ function normalizeAssetPath(path) {
   return path.replace(/^\/?assets\//, "../../assets/");
 }
 
+function sanitizeBears(bears = DEFAULT_STATE.bears) {
+  const filtered = (bears || []).filter((bear) => bear?.name && !REMOVED_BEAR_NAMES.includes(bear.name));
+  return filtered.length ? filtered : DEFAULT_STATE.bears.filter((bear) => !REMOVED_BEAR_NAMES.includes(bear.name));
+}
+
+function sanitizeAssignments(assignments = {}, bears = []) {
+  const validNames = new Set((bears || []).map((bear) => bear.name));
+  return Object.keys(assignments || {}).reduce((result, personName) => {
+    result[personName] = (assignments[personName] || []).filter((bearName) => validNames.has(bearName));
+    return result;
+  }, {});
+}
+
+function sanitizeDraw(draw, bears = []) {
+  if (!draw?.assignments) return draw || null;
+  return {
+    ...draw,
+    assignments: sanitizeAssignments(draw.assignments, bears)
+  };
+}
+
+function normalizeDrawHistory(history = {}, bears = []) {
+  return Object.keys(history || {}).reduce((result, dateKey) => {
+    const draw = sanitizeDraw(history[dateKey], bears);
+    if (draw?.assignments) result[dateKey] = draw;
+    return result;
+  }, {});
+}
+
 function normalizeState(state = DEFAULT_STATE) {
   const todayId = formatDateKey();
   const remotePeople = Array.isArray(state.people) && state.people.length ? state.people : DEFAULT_STATE.people;
-  const remoteBears = Array.isArray(state.bears) && state.bears.length ? state.bears : DEFAULT_STATE.bears;
+  const remoteBears = sanitizeBears(Array.isArray(state.bears) && state.bears.length ? state.bears : DEFAULT_STATE.bears);
   const isTodayState = !state.todayId || state.todayId === todayId;
   const mergedBears = [
     ...remoteBears,
     ...DEFAULT_STATE.bears.filter(
-      (defaultBear) => !remoteBears.some((bear) => bear.name === defaultBear.name)
+      (defaultBear) => !REMOVED_BEAR_NAMES.includes(defaultBear.name) && !remoteBears.some((bear) => bear.name === defaultBear.name)
     )
   ];
+  const bears = sanitizeBears(mergedBears).map((bear) => ({
+    ...bear,
+    image: normalizeAssetPath(bear.image || BEAR_IMAGE_BY_NAME[bear.name]),
+    active: bear.active !== false
+  }));
+  const fallbackBear = bears[0]?.name || "史迪奇";
 
   const logs = normalizeLogs(state.logs || {});
+  const sportsLogs = normalizeSportsLogs(state.sportsLogs || {});
+  const wechatSteps = normalizeWechatSteps(state.wechatSteps || {});
   const people = remotePeople.map((person) => ({
     ...person,
+    displayName: person.displayName || person.name,
+    openid: person.openid || "",
+    wishBear: REMOVED_BEAR_NAMES.includes(person.wishBear) || !bears.some((bear) => bear.name === person.wishBear) ? fallbackBear : person.wishBear,
     image: normalizeAssetPath(person.image || PERSON_IMAGE_BY_NAME[person.name])
   }));
+  const rules = normalizeRules(state.rules || DEFAULT_STATE.rules);
+  const draw = isTodayState ? sanitizeDraw(state.draw, bears) : null;
+  const drawHistory = normalizeDrawHistory(state.drawHistory || {}, bears);
+  if (draw?.assignments && !drawHistory[todayId]) drawHistory[todayId] = draw;
 
   return {
     ...DEFAULT_STATE,
     ...state,
     todayId,
-    draw: isTodayState ? state.draw || null : null,
-    drawUsed: isTodayState ? Boolean(state.drawUsed && state.draw) : false,
-    pendingRedraw: isTodayState ? state.pendingRedraw || null : null,
-    pendingExchange: isTodayState ? state.pendingExchange || null : null,
-    people: calculateCoins(people, logs),
-    bears: mergedBears.map((bear) => ({
-      ...bear,
-      image: normalizeAssetPath(bear.image || BEAR_IMAGE_BY_NAME[bear.name]),
-      active: bear.active !== false
-    })),
+    draw,
+    drawUsed: isTodayState ? Boolean(state.drawUsed && draw) : false,
+    pendingRedraw: null,
+    pendingExchange: null,
+    pendingAuction: null,
+    people: calculateChances(people, logs),
+    bears,
     actions: state.actions || [],
     logs,
-    rules: {
-      ...DEFAULT_STATE.rules,
-      ...(state.rules || {})
-    }
+    drawHistory,
+    sportsLogs,
+    wechatSteps,
+    sportRules: Array.isArray(state.sportRules) && state.sportRules.length ? state.sportRules : DEFAULT_STATE.sportRules,
+    rules
   };
 }
 
@@ -270,13 +416,14 @@ function drawBears(state) {
   };
 }
 
-function addAction(state, person, action, detail = "") {
+function addAction(state, person, action, detail = "", id = "") {
   const actions = state.actions || [];
+  const now = new Date();
   return [
     {
-      id: `${Date.now()}`,
-      date: formatDateKey(),
-      time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
+      id: id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      date: formatDateKey(now),
+      time: now.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
       person: person || "未登录",
       action,
       detail: detail || ""
@@ -312,7 +459,7 @@ async function loadState() {
   }
 }
 
-async function saveState(state) {
+async function saveState(state, mergeOptions = {}) {
   const safeState = normalizeState(state);
   const payload = cleanForCloud({
     ...safeState,
@@ -321,7 +468,10 @@ async function saveState(state) {
   });
 
   try {
-    await callStateFunction("save", payload);
+    await callStateFunction("save", {
+      state: payload,
+      mergeOptions
+    });
     cacheState(payload);
   } catch (error) {
     console.warn("[小熊云函数保存失败]", error);
@@ -337,5 +487,6 @@ module.exports = {
   loadState,
   normalizeState,
   normalizeLog,
+  normalizeSportsLog,
   saveState
 };

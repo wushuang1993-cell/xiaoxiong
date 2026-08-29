@@ -14,11 +14,31 @@ Page({
     state: { people: [], logs: {}, rules: {} },
     todayLogs: [],
     quickRules: [],
+    selectedDrawPeople: [],
     selectedDateTitle: ""
   },
 
   onShow() {
+    this.showShare();
     this.refresh();
+  },
+
+  onShareAppMessage() {
+    return {
+      title: "小熊家务日历",
+      path: "/pages/calendar/index"
+    };
+  },
+
+  onShareTimeline() {
+    return {
+      title: "小熊家务日历"
+    };
+  },
+
+  showShare() {
+    if (!wx.showShareMenu) return;
+    wx.showShareMenu({ menus: ["shareAppMessage", "shareTimeline"] });
   },
 
   async refresh() {
@@ -37,14 +57,16 @@ Page({
     const calendarYear = this.data.calendarYear;
     const calendarMonth = this.data.calendarMonth;
     const quickRules = [
-      ...(safeState.rules?.base || []),
-      ...(safeState.rules?.bonus || []),
-      ...(safeState.rules?.penalty || [])
+      ...(safeState.rules?.base || []).map((rule) => ({ ...rule, creditType: "redraw" })),
+      ...(safeState.rules?.bonus || []).map((rule) => ({ ...rule, creditType: "exchange" })),
+      ...(safeState.rules?.penalty || []).map((rule) => ({ ...rule, creditType: "redraw" }))
     ].map((rule) => ({
       label: rule.label,
       delta: Number(String(rule.value).match(/[-+]?\d+/)?.[0] || 0),
+      creditType: rule.creditType,
       tone: Number(String(rule.value).match(/[-+]?\d+/)?.[0] || 0) < 0 ? "minus" : "plus"
     }));
+    const selectedDraw = this.drawForDay(safeState, selectedDay, calendarYear, calendarMonth);
     this.setData({
       dateText: this.formatDate(),
       selectedDay,
@@ -53,10 +75,37 @@ Page({
       calendarMonthText: `${calendarYear}年${calendarMonth + 1}月`,
       calendarDays: this.buildCalendarDays(safeState, selectedDay, calendarYear, calendarMonth),
       state: safeState,
-      todayLogs: this.logsForDay(safeState, selectedDay, calendarYear, calendarMonth),
+      todayLogs: this.logsForDay(safeState, selectedDay, calendarYear, calendarMonth).map((log) => ({
+        ...log,
+        displayPerson: safeState.people.find((person) => person.name === log.person)?.displayName || log.person,
+        deltaText: this.formatDelta(log)
+      })),
+      selectedDrawPeople: (safeState.people || []).map((person) => ({
+        name: person.name,
+        displayName: person.displayName || person.name,
+        image: person.image,
+        bears: (selectedDraw?.assignments?.[person.name] || []).map((bearName) => ({
+          name: bearName,
+          image: safeState.bears.find((bear) => bear.name === bearName)?.image || ""
+        }))
+      })),
       selectedDateTitle: `${calendarMonth + 1}月${selectedDay}日记录`,
       quickRules
     });
+  },
+
+  drawForDay(state, selectedDay, year, month) {
+    const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+    if (state.drawHistory?.[dateKey]) return state.drawHistory[dateKey];
+    if (state.todayId === dateKey && state.draw?.assignments) return state.draw;
+    return null;
+  },
+
+  formatDelta(log) {
+    const amount = Number(log.delta || 0);
+    const creditType = log.creditType || (log.type === "增值家务" || log.type === "兑换小熊" ? "exchange" : "redraw");
+    const label = creditType === "exchange" ? "申请兑换" : "申请重抽";
+    return `${amount > 0 ? "+" : ""}${amount} ${label}`;
   },
 
   buildCalendarDays(state, selectedDay, year, month) {
@@ -77,7 +126,8 @@ Page({
         day,
         isToday: isCurrentMonth && day === today,
         isSelected: day === selectedDay,
-        hasLogs: this.logsForDay(state, day, year, month).length > 0
+        hasLogs: this.logsForDay(state, day, year, month).length > 0,
+        hasDraw: Boolean(this.drawForDay(state, day, year, month))
       });
     }
 
@@ -153,15 +203,18 @@ Page({
     const day = new Date().getDate();
     const label = event.currentTarget.dataset.label;
     const delta = Number(event.currentTarget.dataset.delta || 0);
+    const creditType = event.currentTarget.dataset.creditType || "";
     const today = new Date();
     const state = { ...this.data.state };
     state.logs = state.logs || {};
     state.logs[day] = state.logs[day] || [];
     state.logs[day].push({
+      id: `log-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       person: this.data.selectedPerson,
       type: label,
       detail: label,
       delta,
+      creditType,
       date: formatDateKey(today),
       earnedDay: day,
       createdAt: today.toISOString()

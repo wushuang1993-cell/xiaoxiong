@@ -56,6 +56,12 @@
   line-height: 84rpx;
 }
 
+.wechat-login {
+  width: 100%;
+  margin-top: 18rpx;
+  background: #82b58a;
+}
+
 .login-button::after,
 .switch-account::after {
   border: 0;
@@ -83,7 +89,9 @@
   width: 82rpx;
   height: 82rpx;
   border-radius: 50%;
-  background: #fff7ea;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.9), transparent 38%),
+    linear-gradient(135deg, #fff7e5 0%, #eaf6ef 100%);
 }
 
 .editable-avatar {
@@ -103,6 +111,12 @@
   display: flex;
   align-items: center;
   gap: 12rpx;
+}
+
+.editable-name {
+  text-decoration: underline;
+  text-decoration-color: rgba(217, 154, 73, 0.45);
+  text-underline-offset: 8rpx;
 }
 
 .login-badge {
@@ -276,7 +290,9 @@
   height: 72rpx;
   flex: 0 0 72rpx;
   border-radius: 20rpx;
-  background: #fff9ef;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.9), transparent 36%),
+    linear-gradient(135deg, #fff7e5 0%, #eaf6ef 100%);
 }
 
 .empty-avatar,
@@ -328,7 +344,9 @@
   height: 58rpx;
   flex: 0 0 58rpx;
   border-radius: 18rpx;
-  background: #fff9ef;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.9), transparent 36%),
+    linear-gradient(135deg, #fff7e5 0%, #eaf6ef 100%);
 }
 
 .bear-name-input {

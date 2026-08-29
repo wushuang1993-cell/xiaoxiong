@@ -1,12 +1,13 @@
-import { loadRemoteState, saveRemoteState } from "./src/remoteState.js";
+import { loadRemoteState, saveRemoteState, uploadImageFile } from "./src/remoteState.js";
 
 const ASSET_VERSION = "20260621-watercolor-2";
 const today = new Date();
-const TODAY_ID = today.toISOString().slice(0, 10);
 const TODAY_MONTH = today.getMonth() + 1;
 const TODAY_DAY = today.getDate();
+const TODAY_ID = `${today.getFullYear()}-${String(TODAY_MONTH).padStart(2, "0")}-${String(TODAY_DAY).padStart(2, "0")}`;
 let authApi = null;
 let remoteSaveTimer = null;
+let pendingSaveOptions = {};
 
 const state = {
   view: "bears",
@@ -38,36 +39,39 @@ const state = {
   editingBear: null,
   editingMember: null,
   people: [
-    { name: "闪闪鱼", mark: "闪", wishBear: "史迪奇", coins: 0, avatar: "fish", image: "assets/shanshanyu.png" },
-    { name: "杰尼龟", mark: "杰", wishBear: "卢卡斯", coins: 0, avatar: "turtle", image: "assets/jienigui.png" },
+    { name: "闪闪鱼", mark: "闪", wishBear: "史迪奇", coins: 0, redrawChances: 0, exchangeChances: 0, avatar: "fish", image: "assets/shanshanyu.png" },
+    { name: "杰尼龟", mark: "杰", wishBear: "卢卡斯", coins: 0, redrawChances: 0, exchangeChances: 0, avatar: "turtle", image: "assets/jienigui.png" },
   ],
   bears: [
     { name: "史迪奇", color: "#92cfff", image: "assets/stitch.png", active: true },
-    { name: "拖拉机", color: "#9fd493", image: "assets/tractor.png", active: true },
     { name: "芭芭拉", color: "#ffc2d0", image: "assets/barbara.png", active: true },
     { name: "卢卡斯", color: "#e0a547", image: "assets/lucas.png", active: true },
     { name: "马里奥", color: "#c9935e", image: "assets/mario.png", active: true },
     { name: "爱丽丝", color: "#b5e2dd", image: "assets/alice.png", active: true },
   ],
+  drawHistory: {},
   logs: { [TODAY_DAY]: [] },
   rules: {
     drink: [
-      { label: "咖啡", value: "+0 金币" },
-      { label: "奶茶", value: "+0 金币" },
+      { label: "咖啡", value: "+0" },
+      { label: "奶茶", value: "+0" },
     ],
     base: [
-      { label: "做饭", value: "+1 金币" },
-      { label: "洗衣服", value: "+1 金币" },
-      { label: "倒垃圾", value: "+1 金币" },
+      { label: "做饭", value: "+1 申请重抽" },
+      { label: "洗衣服", value: "+1 申请重抽" },
+      { label: "倒垃圾", value: "+1 申请重抽" },
     ],
     bonus: [
-      { label: "帮对方设计封面图", value: "+3 金币" },
-      { label: "帮对方提供工作建议", value: "+2 金币" },
-      { label: "运动", value: "+1 金币" },
+      { label: "帮对方设计封面图", value: "+1 申请兑换" },
+      { label: "帮对方提供工作建议", value: "+1 申请兑换" },
+      { label: "运动", value: "+1 申请兑换" },
     ],
-    penalty: [{ label: "未完成基础家务", value: "-1 金币" }],
+    penalty: [{ label: "未完成基础家务", value: "-1 申请重抽" }],
   },
 };
+
+const REMOVED_BEAR_NAMES = new Set(["拖拉机"]);
+const DEFAULT_FALLBACK_BEAR = "史迪奇";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -92,7 +96,136 @@ function seededRandom(seed) {
   };
 }
 
-function saveToday() {
+function deepClone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function mergeSaveOptions(current, next) {
+  return {
+    ...current,
+    ...next,
+    deletedRules: [...(current.deletedRules || []), ...(next.deletedRules || [])],
+    deletedBears: [...(current.deletedBears || []), ...(next.deletedBears || [])],
+  };
+}
+
+function mergeItems(remoteItems = [], localItems = [], keyForItem, mergeItem = (remoteItem, localItem) => ({ ...remoteItem, ...localItem })) {
+  const map = new Map();
+  remoteItems.forEach((item) => {
+    const key = keyForItem(item);
+    if (key) map.set(key, deepClone(item));
+  });
+  localItems.forEach((item) => {
+    const key = keyForItem(item);
+    if (!key) return;
+    map.set(key, map.has(key) ? mergeItem(map.get(key), item) : deepClone(item));
+  });
+  return Array.from(map.values());
+}
+
+function logKey(log, fallbackDay) {
+  return log.id || [
+    log.person || "",
+    log.type || "",
+    log.detail || "",
+    log.delta || 0,
+    log.date || "",
+    log.createdAt || "",
+    fallbackDay || "",
+  ].join("|");
+}
+
+function mergeLogs(localLogs = {}, remoteLogs = {}) {
+  const days = new Set([...Object.keys(remoteLogs || {}), ...Object.keys(localLogs || {})]);
+  const merged = {};
+  days.forEach((day) => {
+    merged[day] = mergeItems(
+      remoteLogs[day] || [],
+      localLogs[day] || [],
+      (log) => logKey(log, day),
+    );
+  });
+  return merged;
+}
+
+function actionKey(action) {
+  if (action.action === "今日已抽签") {
+    return `draw:${action.date || TODAY_ID}:${action.person || ""}`;
+  }
+  return action.id || `${action.date || action.day}-${action.time}-${action.person}-${action.action}-${action.detail}`;
+}
+
+function sanitizeBears(bears = []) {
+  const filtered = (bears || []).filter((bear) => bear?.name && !REMOVED_BEAR_NAMES.has(bear.name));
+  return filtered.length ? filtered : state.bears.filter((bear) => !REMOVED_BEAR_NAMES.has(bear.name));
+}
+
+function normalizeRuleValueForGroup(group, item) {
+  if (group === "base") return { ...item, value: ruleValue(1, "redraw") };
+  if (group === "bonus") return { ...item, value: ruleValue(1, "exchange") };
+  if (group === "penalty") return { ...item, value: ruleValue(-1, "redraw") };
+  return item;
+}
+
+function normalizeRulesForCreditSystem(rules = state.rules) {
+  return {
+    ...rules,
+    base: (rules.base || []).map((item) => normalizeRuleValueForGroup("base", item)),
+    bonus: (rules.bonus || []).map((item) => normalizeRuleValueForGroup("bonus", item)),
+    penalty: (rules.penalty || []).map((item) => normalizeRuleValueForGroup("penalty", item)),
+  };
+}
+
+function mergeDrawHistory(localHistory = {}, remoteHistory = {}) {
+  return { ...(remoteHistory || {}), ...(localHistory || {}) };
+}
+
+function mergeRules(localRules = {}, remoteRules = {}, options = {}) {
+  const groups = new Set([...Object.keys(remoteRules || {}), ...Object.keys(localRules || {})]);
+  const deleted = options.deletedRules || [];
+  return Array.from(groups).reduce((result, group) => {
+    const remoteItems = (remoteRules[group] || []).filter(
+      (rule) => !deleted.some((item) => item.group === group && item.label === rule.label),
+    );
+    result[group] = mergeItems(remoteItems, localRules[group] || [], (rule) => rule.label);
+    return result;
+  }, {});
+}
+
+function mergeBears(localBears = [], remoteBears = [], options = {}) {
+  const deletedNames = new Set(options.deletedBears || []);
+  return mergeItems(
+    sanitizeBears(remoteBears).filter((bear) => !deletedNames.has(bear.name)),
+    sanitizeBears(localBears),
+    (bear) => bear.name,
+  ).map((bear) => ({ ...bear, active: bear.active !== false }));
+}
+
+function mergeSharedStateForSave(localPayload, remotePayload, options = {}) {
+  if (!remotePayload) return localPayload;
+  const sameDay = localPayload.todayId && remotePayload.todayId === localPayload.todayId;
+  const drawHistory = mergeDrawHistory(localPayload.drawHistory || {}, remotePayload.drawHistory || {});
+  if (remotePayload.draw?.assignments && remotePayload.todayId) drawHistory[remotePayload.todayId] = remotePayload.draw;
+  if (localPayload.draw?.assignments && localPayload.todayId) drawHistory[localPayload.todayId] = localPayload.draw;
+  return {
+    ...remotePayload,
+    ...localPayload,
+    draw: localPayload.draw || (sameDay ? remotePayload.draw : null) || null,
+    drawUsed: Boolean((localPayload.draw || (sameDay ? remotePayload.draw : null)) && (localPayload.drawUsed || (sameDay && remotePayload.drawUsed))),
+    drawRound: sameDay ? Math.max(Number(remotePayload.drawRound || 0), Number(localPayload.drawRound || 0)) : Number(localPayload.drawRound || 0),
+    pendingRedraw: null,
+    pendingExchange: null,
+    actions: mergeItems(remotePayload.actions || [], localPayload.actions || [], actionKey),
+    people: mergeItems(remotePayload.people || [], localPayload.people || [], (person) => person.name),
+    bears: mergeBears(localPayload.bears || [], remotePayload.bears || [], options),
+    rules: normalizeRulesForCreditSystem(mergeRules(localPayload.rules || {}, remotePayload.rules || {}, options)),
+    logs: mergeLogs(localPayload.logs || {}, remotePayload.logs || {}),
+    drawHistory,
+    savedAt: localPayload.savedAt,
+  };
+}
+
+function saveToday(options = {}) {
   if (!state.auth.configured) {
     state.sync = { ...state.sync, mode: "preview", message: "未配置 Supabase，当前不会保存到本地。" };
     return;
@@ -104,13 +237,21 @@ function saveToday() {
   }
 
   clearTimeout(remoteSaveTimer);
+  pendingSaveOptions = mergeSaveOptions(pendingSaveOptions, options);
   state.sync = { ...state.sync, mode: "online", saving: true, message: "正在同步..." };
   remoteSaveTimer = setTimeout(async () => {
     try {
-      await saveRemoteState(serializeSharedState());
+      const saveOptions = pendingSaveOptions;
+      pendingSaveOptions = {};
+      const localPayload = serializeSharedState();
+      const remotePayload = await loadRemoteState();
+      const payload = mergeSharedStateForSave(localPayload, remotePayload, saveOptions);
+      await saveRemoteState(payload);
+      applySharedState(payload);
       state.sync = { ...state.sync, mode: "online", saving: false, message: "已同步到线上" };
-      renderCurrentUser();
+      renderAll();
     } catch (error) {
+      pendingSaveOptions = {};
       state.sync = { ...state.sync, mode: "error", saving: false, message: error.message || "线上同步失败" };
       showToast("线上同步失败");
       renderCurrentUser();
@@ -129,52 +270,103 @@ function serializeSharedState() {
     pendingExchange: state.pendingExchange,
     pendingRedraw: state.pendingRedraw,
     actions: state.actions,
-    people: state.people.map(({ name, mark, wishBear, coins, avatar, image }) => ({
+    people: state.people.map(({ name, mark, wishBear, coins, redrawChances, exchangeChances, avatar, image }) => ({
       name,
       mark,
       wishBear,
       coins,
+      redrawChances,
+      exchangeChances,
       avatar,
       image,
     })),
     bears: state.bears,
     rules: state.rules,
     logs: state.logs,
+    drawHistory: state.drawHistory,
   };
 }
 
 function applySharedState(saved) {
   if (!saved) return false;
-  state.draw = saved.draw || null;
-  state.drawUsed = Boolean(saved.drawUsed && saved.draw);
-  state.drawRound = saved.drawRound || 0;
-  state.pendingExchange = saved.pendingExchange || null;
-  state.pendingRedraw = saved.pendingRedraw || null;
+  const savedTodayId = saved.todayId || TODAY_ID;
+  const isTodayState = savedTodayId === TODAY_ID;
+  state.draw = isTodayState ? saved.draw || null : null;
+  state.drawUsed = Boolean(isTodayState && saved.drawUsed && saved.draw);
+  state.drawRound = isTodayState ? saved.drawRound || 0 : 0;
+  state.pendingExchange = null;
+  state.pendingRedraw = null;
   state.actions = Array.isArray(saved.actions) ? saved.actions : [];
+  state.drawHistory = saved.drawHistory || {};
+  if (saved.draw?.assignments && savedTodayId) state.drawHistory[savedTodayId] = saved.draw;
   state.logs = saved.logs || { [TODAY_DAY]: [] };
   if (!state.logs[TODAY_DAY]) state.logs[TODAY_DAY] = [];
+  const creditTotals = creditTotalsFromLogs(state.logs);
   if (Array.isArray(saved.bears) && saved.bears.length >= 1) {
-    state.bears = saved.bears.map((bear) => ({ ...bear, active: bear.active !== false }));
+    state.bears = sanitizeBears(saved.bears).map((bear) => ({ ...bear, active: bear.active !== false }));
   }
+  migrateRemovedBearReferences();
   if (saved.rules?.base && saved.rules?.bonus && saved.rules?.penalty) {
-    state.rules = {
+    state.rules = normalizeRulesForCreditSystem({
       drink: saved.rules.drink || state.rules.drink,
       base: saved.rules.base,
       bonus: saved.rules.bonus,
       penalty: saved.rules.penalty,
-    };
+    });
   }
   if (Array.isArray(saved.people)) {
     saved.people.forEach((savedPerson) => {
       const person = personByName(savedPerson.name);
       if (!person) return;
       person.wishBear = savedPerson.wishBear || person.wishBear;
-      person.coins = Number.isFinite(savedPerson.coins) ? savedPerson.coins : person.coins;
+      person.coins = 0;
+      person.redrawChances = Number.isFinite(creditTotals[person.name]?.redraw)
+        ? creditTotals[person.name].redraw
+        : Number(savedPerson.redrawChances || 0);
+      person.exchangeChances = Number.isFinite(creditTotals[person.name]?.exchange)
+        ? creditTotals[person.name].exchange
+        : Number(savedPerson.exchangeChances || 0);
       person.image = savedPerson.image || person.image;
       person.avatar = savedPerson.avatar || person.avatar;
     });
   }
+  migrateRemovedBearReferences();
+  ensureDrawHistoryFromCurrent();
   return true;
+}
+
+function creditTypeForLog(log) {
+  if (log.creditType) return log.creditType;
+  if (log.type === "增值家务" || log.type === "兑换小熊") return "exchange";
+  if (["家务", "基础家务", "扣分", "重新抽签", "重抽"].includes(log.type)) return "redraw";
+  return null;
+}
+
+function creditTotalsFromLogs(logs = {}) {
+  const totals = {};
+  const counts = {};
+  state.people.forEach((person) => {
+    totals[person.name] = { redraw: 0, exchange: 0 };
+    counts[person.name] = 0;
+  });
+  Object.values(logs || {}).forEach((items) => {
+    (items || []).forEach((log) => {
+      if (!Object.prototype.hasOwnProperty.call(totals, log.person)) return;
+      const creditType = creditTypeForLog(log);
+      if (!creditType) return;
+      counts[log.person] += 1;
+      totals[log.person][creditType] += Number(log.delta || 0);
+    });
+  });
+  return Object.keys(totals).reduce((result, name) => {
+    if (counts[name] > 0) {
+      result[name] = {
+        redraw: Math.max(0, totals[name].redraw),
+        exchange: Math.max(0, totals[name].exchange),
+      };
+    }
+    return result;
+  }, {});
 }
 
 function personByName(name) {
@@ -192,6 +384,65 @@ function bearByName(name) {
 function activeBears() {
   const active = state.bears.filter((bear) => bear.active !== false).slice(0, 6);
   return active.length ? active : state.bears.slice(0, 1);
+}
+
+function firstAvailableBearName() {
+  return activeBears()[0]?.name || state.bears[0]?.name || DEFAULT_FALLBACK_BEAR;
+}
+
+function sanitizeAssignments(assignments = {}) {
+  const validNames = new Set(state.bears.map((bear) => bear.name));
+  return Object.keys(assignments || {}).reduce((result, personName) => {
+    result[personName] = (assignments[personName] || []).filter((bearName) => validNames.has(bearName));
+    return result;
+  }, {});
+}
+
+function sanitizeDraw(draw) {
+  if (!draw?.assignments) return draw || null;
+  return { ...draw, assignments: sanitizeAssignments(draw.assignments) };
+}
+
+function migrateRemovedBearReferences() {
+  const fallback = firstAvailableBearName();
+  state.people.forEach((person) => {
+    if (REMOVED_BEAR_NAMES.has(person.wishBear) || !bearByName(person.wishBear)) {
+      person.wishBear = fallback;
+    }
+  });
+  state.bears = sanitizeBears(state.bears).map((bear) => ({ ...bear, active: bear.active !== false }));
+  state.draw = sanitizeDraw(state.draw);
+  if (state.pendingExchange && REMOVED_BEAR_NAMES.has(state.pendingExchange.targetBear)) {
+    state.pendingExchange = null;
+  }
+  if (state.exchangeDraft && REMOVED_BEAR_NAMES.has(state.exchangeDraft.targetBear)) {
+    state.exchangeDraft = null;
+  }
+  state.drawHistory = Object.keys(state.drawHistory || {}).reduce((history, dateKey) => {
+    const draw = sanitizeDraw(state.drawHistory[dateKey]);
+    if (draw?.assignments) history[dateKey] = draw;
+    return history;
+  }, {});
+}
+
+function storeDrawHistory(dateKey = TODAY_ID) {
+  if (!state.draw?.assignments) return;
+  state.drawHistory = {
+    ...(state.drawHistory || {}),
+    [dateKey]: deepClone(sanitizeDraw(state.draw)),
+  };
+}
+
+function ensureDrawHistoryFromCurrent() {
+  if (state.draw?.assignments && !state.drawHistory?.[TODAY_ID]) {
+    storeDrawHistory(TODAY_ID);
+  }
+}
+
+function drawForDate(dateKey) {
+  if (state.drawHistory?.[dateKey]) return state.drawHistory[dateKey];
+  if (dateKey === TODAY_ID && state.draw?.assignments) return state.draw;
+  return null;
 }
 
 function runDraw(seedText) {
@@ -244,7 +495,8 @@ function drawInitial() {
   state.drawRound = 1;
   state.draw = runDraw(`bear-${TODAY_ID}-free`);
   state.drawUsed = true;
-  recordAction(state.currentUser, "今日已抽签", `校验码 ${state.draw.checksum}`);
+  storeDrawHistory();
+  recordAction(state.currentUser, "今日已抽签", `校验码 ${state.draw.checksum}`, `action-${TODAY_ID}-draw-${state.currentUser}`);
   saveToday();
   renderAll();
   announceWishHit("今日小熊已抽签");
@@ -260,42 +512,35 @@ function requestRedraw(personName) {
     showToast(`请切换为${person.name}后申请重抽`);
     return;
   }
-  if (state.pendingExchange || state.pendingRedraw) {
-    showToast("还有申请等待处理");
+  if (person.redrawChances < 1) {
+    showToast(`${person.name}没有申请重抽机会`);
     return;
   }
-  if (person.coins < 3) {
-    showToast(`${person.name}金币不够`);
+  performDirectRedraw(person);
+}
+
+function performDirectRedraw(applicant) {
+  if (!applicant || !state.drawUsed) return;
+  if (applicant.redrawChances < 1) {
+    showToast(`${applicant.name}没有申请重抽机会`);
     return;
   }
-  state.pendingRedraw = { applicant: person.name };
-  recordAction(person.name, "申请重抽", "等待对方同意");
+  state.drawRound += 1;
+  state.draw = runDraw(`bear-${TODAY_ID}-redraw-${state.drawRound}`);
+  storeDrawHistory();
+  addLog(TODAY_DAY, { type: "重新抽签", person: applicant.name, detail: "消耗申请重抽机会", delta: -1, creditType: "redraw" });
+  recordAction(applicant.name, "直接重抽", "消耗 1 次申请重抽机会");
+  state.pendingRedraw = null;
   saveToday();
   renderAll();
-  showToast("重抽申请已发出");
+  announceWishHit("已重新抽签");
 }
 
 function applyApprovedRedraw() {
   const pending = state.pendingRedraw;
   if (!pending || !state.drawUsed) return;
   const applicant = personByName(pending.applicant);
-  const approver = otherPerson(pending.applicant);
-  if (!applicant || !approver) return;
-  if (applicant.coins < 3) {
-    state.pendingRedraw = null;
-    saveToday();
-    renderAll();
-    showToast(`${applicant.name}金币不够`);
-    return;
-  }
-  state.drawRound += 1;
-  state.draw = runDraw(`bear-${TODAY_ID}-paid-${state.drawRound}`);
-  addLog(TODAY_DAY, { type: "重新抽签", person: applicant.name, detail: `${approver.name}已同意`, delta: -3 });
-  recordAction(approver.name, "同意重抽", `${applicant.name}扣 3 金币`);
-  state.pendingRedraw = null;
-  saveToday();
-  renderAll();
-  announceWishHit(`${approver.name}已同意重抽`);
+  performDirectRedraw(applicant);
 }
 
 function applyApprovedExchange() {
@@ -324,16 +569,91 @@ function applyApprovedExchange() {
   showToast(`${approver.name}已同意兑换`);
 }
 
-function addLog(day, log) {
-  if (!state.logs[day]) state.logs[day] = [];
-  state.logs[day].push(log);
-  const person = personByName(log.person);
-  if (person && log.delta) person.coins += log.delta;
+function applyDirectExchange(applicant, targetBear) {
+  if (!applicant || !state.draw?.assignments) return;
+  if (state.currentUser !== applicant.name) {
+    showToast(`请切换为${applicant.name}后申请兑换`);
+    return;
+  }
+  if (applicant.exchangeChances < 1) {
+    showToast(`${applicant.name}没有申请兑换机会`);
+    return;
+  }
+  const opponent = otherPerson(applicant.name);
+  const mine = state.draw.assignments[applicant.name] || [];
+  const theirs = state.draw.assignments[opponent.name] || [];
+  const targetIndex = theirs.indexOf(targetBear);
+  if (targetIndex < 0) {
+    showToast("这只小熊现在不能兑换");
+    return;
+  }
+  const offerBear = mine[0] || "";
+  if (offerBear) {
+    mine[0] = targetBear;
+    theirs[targetIndex] = offerBear;
+  } else {
+    theirs.splice(targetIndex, 1);
+    mine.push(targetBear);
+  }
+  state.draw.assignments[applicant.name] = mine;
+  state.draw.assignments[opponent.name] = theirs;
+  storeDrawHistory();
+  addLog(TODAY_DAY, {
+    type: "兑换小熊",
+    person: applicant.name,
+    detail: offerBear ? `用${offerBear}换${targetBear}` : `获得${targetBear}`,
+    delta: -1,
+    creditType: "exchange",
+  });
+  recordAction(applicant.name, "直接兑换", targetBear);
+  saveToday();
+  renderAll();
+  showToast(`${applicant.name}已兑换${targetBear}`);
 }
 
-function recordAction(person, action, detail = "") {
+function cancelPendingRequest(type) {
+  const pending = type === "redraw" ? state.pendingRedraw : state.pendingExchange;
+  if (!pending) return;
+  const applicant = personByName(pending.applicant);
+  if (!applicant || state.currentUser !== applicant.name) {
+    showToast(`请切换为${applicant?.name || "发起人"}后取消`);
+    return;
+  }
+  if (type === "redraw") {
+    state.pendingRedraw = null;
+    recordAction(applicant.name, "取消重抽", "已取消申请");
+    saveToday({ clearPending: "redraw" });
+  } else {
+    state.pendingExchange = null;
+    recordAction(applicant.name, "取消兑换", pending.targetBear || "");
+    saveToday({ clearPending: "exchange" });
+  }
+  renderAll();
+  showToast("申请已取消");
+}
+
+function addLog(day, log) {
+  if (!state.logs[day]) state.logs[day] = [];
+  const now = new Date();
+  state.logs[day].push({
+    id: log.id || `log-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    date: log.date || TODAY_ID,
+    earnedDay: log.earnedDay || day,
+    createdAt: log.createdAt || now.toISOString(),
+    ...log,
+  });
+  const person = personByName(log.person);
+  if (person && log.delta) {
+    const creditType = creditTypeForLog(log);
+    if (creditType === "exchange") person.exchangeChances = Math.max(0, Number(person.exchangeChances || 0) + Number(log.delta || 0));
+    if (creditType === "redraw") person.redrawChances = Math.max(0, Number(person.redrawChances || 0) + Number(log.delta || 0));
+  }
+}
+
+function recordAction(person, action, detail = "", id = "") {
   state.actions.unshift({
-    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    id: id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    date: TODAY_ID,
     day: TODAY_DAY,
     time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
     person,
@@ -354,6 +674,20 @@ function showToast(message) {
 function formatTodayDate() {
   const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
   return `${today.getFullYear()}年${TODAY_MONTH}月${TODAY_DAY}日 | ${weekdays[today.getDay()]}`;
+}
+
+function dateKeyForDay(day) {
+  return `${today.getFullYear()}-${String(TODAY_MONTH).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function logsForDay(day) {
+  const dateKey = dateKeyForDay(day);
+  return Object.keys(state.logs || {}).reduce((items, logDay) => {
+    (state.logs[logDay] || []).forEach((log) => {
+      if (log.date ? log.date === dateKey : Number(logDay) === Number(day)) items.push(log);
+    });
+    return items;
+  }, []);
 }
 
 function wishWinners() {
@@ -417,6 +751,8 @@ function personAvatar(person, size = "") {
 }
 
 function assetUrl(path) {
+  if (!path) return "";
+  if (path.startsWith("http") || path.startsWith("wxfile:") || path.startsWith("cloud:")) return path;
   if (path.startsWith("data:") || path.startsWith("blob:")) return path;
   return `${path}?v=${ASSET_VERSION}`;
 }
@@ -473,7 +809,7 @@ function drawPersonCard(person) {
     <article class="draw-person ${tone}">
       <div class="person-head vertical">
         ${personAvatar(person, "large")}
-        <small>${person.coins} 金币</small>
+        <small>${chanceSummary(person)}</small>
       </div>
       <div class="bear-stack">
         ${
@@ -513,6 +849,7 @@ function renderPendingRedraw(card) {
   const approver = otherPerson(pending.applicant);
   const applicant = personByName(pending.applicant);
   const canApprove = state.currentUser === approver.name;
+  const canCancel = state.currentUser === applicant.name;
   card.classList.remove("hidden");
   card.innerHTML = `
     <div class="pending-main">
@@ -521,13 +858,18 @@ function renderPendingRedraw(card) {
       </span>
       <div class="pending-copy">
         <strong>申请重新抽签</strong>
-        <small>${applicant.name}发起 · 需要${approver.name}同意后扣 3 金币</small>
+        <small>${applicant.name}发起 · 旧申请会直接消耗 1 次重抽机会</small>
       </div>
     </div>
     ${
-      canApprove
-        ? `<button class="pending-approve" id="approveRedraw" type="button">同意</button>`
-        : `<button class="pending-approve muted" disabled type="button">等待</button>`
+      canCancel
+        ? `<div class="pending-actions">
+            <button class="pending-cancel" id="cancelRedraw" type="button">取消</button>
+            <button class="pending-wait" disabled type="button">可直接重抽</button>
+          </div>`
+        : canApprove
+          ? `<button class="pending-approve" id="approveRedraw" type="button">直接重抽</button>`
+          : `<button class="pending-approve muted" disabled type="button">等待</button>`
     }
   `;
 }
@@ -538,6 +880,7 @@ function renderPendingExchange(card) {
   const applicant = personByName(pending.applicant);
   const bear = bearByName(pending.targetBear);
   const canApprove = state.currentUser === approver.name;
+  const canCancel = state.currentUser === applicant.name;
   card.classList.remove("hidden");
   card.innerHTML = `
     <div class="pending-main">
@@ -546,13 +889,18 @@ function renderPendingExchange(card) {
       </span>
       <div class="pending-copy">
         <strong>申请兑换${pending.targetBear}</strong>
-        <small>${applicant.name}发起 · ${approver.name}选择交换小熊</small>
+        <small>${applicant.name}发起 · 旧申请会直接消耗 1 次兑换机会</small>
       </div>
     </div>
     ${
-      canApprove
-        ? `<button class="pending-approve" id="approveExchange" type="button">同意</button>`
-        : `<button class="pending-approve muted" disabled type="button">等待</button>`
+      canCancel
+        ? `<div class="pending-actions">
+            <button class="pending-cancel" id="cancelExchange" type="button">取消</button>
+            <button class="pending-wait" disabled type="button">可直接兑换</button>
+          </div>`
+        : canApprove
+          ? `<button class="pending-approve" id="approveExchange" type="button">直接兑换</button>`
+          : `<button class="pending-approve muted" disabled type="button">等待</button>`
     }
   `;
 }
@@ -596,7 +944,7 @@ function renderCalendar() {
       (person) => `
         <button class="${person.name === state.selectedPerson ? "active" : ""}" data-calendar-person="${person.name}" type="button">
           <strong>${person.name}</strong>
-          <small>${person.coins} 金币</small>
+          <small>${chanceSummary(person)}</small>
         </button>
       `,
     )
@@ -604,22 +952,24 @@ function renderCalendar() {
 
   $("#quickActions").innerHTML = renderActionSections();
 
-  const selectedLogs = (state.logs[TODAY_DAY] || []).filter((log) => log.person === state.selectedPerson);
+  const selectedLogs = logsForDay(TODAY_DAY).filter((log) => log.person === state.selectedPerson);
   $("#dayLog").innerHTML = renderTodayWorkSummary(selectedLogs);
 }
 
 function renderStats() {
-  const leading = 1;
+  const leading = new Date(today.getFullYear(), TODAY_MONTH - 1, 1).getDay();
+  const totalDays = new Date(today.getFullYear(), TODAY_MONTH, 0).getDate();
   const days = [];
   for (let i = 0; i < leading; i += 1) days.push(`<div class="day-cell empty"></div>`);
-  for (let day = 1; day <= 30; day += 1) {
-    const logs = state.logs[day] || [];
+  for (let day = 1; day <= totalDays; day += 1) {
+    const logs = logsForDay(day);
+    const dateKey = dateKeyForDay(day);
     const dots = logs
       .slice(0, 3)
       .map((log) => `<span class="tag-dot ${tagClass(log.type)}"></span>`)
       .join("");
     days.push(`
-      <button class="day-cell ${day === state.selectedDay ? "active" : ""}" data-day="${day}" type="button">
+      <button class="day-cell ${day === state.selectedDay ? "active" : ""} ${drawForDate(dateKey) ? "has-draw" : ""}" data-day="${day}" type="button">
         ${day}
         <span class="day-tags">${dots}</span>
       </button>
@@ -630,15 +980,22 @@ function renderStats() {
 }
 
 function renderSelectedDayLedger() {
-  const selectedLogs = state.logs[state.selectedDay] || [];
-  const total = selectedLogs.reduce((sum, log) => sum + Number(log.delta || 0), 0);
+  const selectedLogs = logsForDay(state.selectedDay);
+  const totals = selectedLogs.reduce(
+    (sum, log) => {
+      const creditType = creditTypeForLog(log);
+      if (creditType) sum[creditType] += Number(log.delta || 0);
+      return sum;
+    },
+    { redraw: 0, exchange: 0 },
+  );
   $("#selectedDayLedger").innerHTML = `
     <div class="history-head">
       <div>
         <p class="date-line">${TODAY_MONTH}月${state.selectedDay}日</p>
-        <h2>当天积分</h2>
+        <h2>当天机会</h2>
       </div>
-      <span>${total > 0 ? "+" : ""}${total}</span>
+      <span>重抽 ${totals.redraw > 0 ? "+" : ""}${totals.redraw} · 兑换 ${totals.exchange > 0 ? "+" : ""}${totals.exchange}</span>
     </div>
     ${state.people.map((person) => dayPersonHistory(person, selectedLogs)).join("")}
   `;
@@ -646,7 +1003,7 @@ function renderSelectedDayLedger() {
 
 function renderActionSections() {
   const groups = [
-    ["家务", "base"],
+    ["基础家务", "base"],
     ["增值家务", "bonus"],
     ["扣分", "penalty"],
     ["饮品", "drink"],
@@ -662,8 +1019,9 @@ function renderActionSections() {
             ${items
               .map((item) => {
                 const delta = ruleAmount(item);
+                const creditType = ruleCreditType(group, item);
                 return `
-                  <button class="action-tile ${delta < 0 ? "penalty" : ""}" data-log-type="${title}" data-log-detail="${item.label}" data-log-delta="${delta}" type="button">
+                  <button class="action-tile ${delta < 0 ? "penalty" : ""}" data-log-type="${title}" data-log-detail="${item.label}" data-log-delta="${delta}" data-log-credit-type="${creditType || ""}" type="button">
                     ${item.label}
                   </button>
                 `;
@@ -679,21 +1037,31 @@ function renderActionSections() {
 function dayPersonHistory(person, logs) {
   const personLogs = logs.filter((log) => log.person === person.name);
   const rows = personLogs.map((log) => ({ ...log, day: state.selectedDay }));
-  const net = rows.reduce((sum, log) => sum + Number(log.delta || 0), 0);
+  const dateKey = dateKeyForDay(state.selectedDay);
+  const assigned = drawForDate(dateKey)?.assignments?.[person.name] || [];
+  const redrawNet = rows.filter((log) => creditTypeForLog(log) === "redraw").reduce((sum, log) => sum + Number(log.delta || 0), 0);
+  const exchangeNet = rows.filter((log) => creditTypeForLog(log) === "exchange").reduce((sum, log) => sum + Number(log.delta || 0), 0);
   return `
     <section class="person-history">
       <div class="person-ledger-head">
         ${personAvatar(person)}
         <div>
           <strong>${person.name}</strong>
-          <small>${rows.length ? `${net > 0 ? "+" : ""}${net}` : "0"}</small>
+          <small>重抽 ${redrawNet > 0 ? "+" : ""}${redrawNet} · 兑换 ${exchangeNet > 0 ? "+" : ""}${exchangeNet}</small>
         </div>
+      </div>
+      <div class="history-bears">
+        ${
+          assigned.length
+            ? assigned.map(bearChip).join("")
+            : `<div class="ledger-empty">这一天没有保存小熊结果</div>`
+        }
       </div>
       <div class="ledger-list">
         ${
           rows.length
             ? rows.map(scoreRow).join("")
-            : `<div class="ledger-empty">这一天没有积分变化</div>`
+            : `<div class="ledger-empty">这一天没有机会变化</div>`
         }
       </div>
     </section>
@@ -710,7 +1078,7 @@ function renderTodayWorkSummary(logs) {
         <strong>${workLogs.length} 项</strong>
       </div>
       <div>
-        <small>积分变化</small>
+        <small>机会变化</small>
         <strong class="${net < 0 ? "negative" : ""}">${net > 0 ? "+" : ""}${net}</strong>
       </div>
     </section>
@@ -729,7 +1097,7 @@ function scoreRow(log) {
         <strong>${log.detail || log.type}</strong>
         <small>${log.type}</small>
       </div>
-      <span>${positive ? "+" : ""}${log.delta}</span>
+      <span>${formatCreditDelta(log)}</span>
     </div>
   `;
 }
@@ -743,7 +1111,7 @@ function ledgerRow(log) {
         <strong>${TODAY_MONTH}月${log.day}日</strong>
         <small>${log.person} · ${log.type}${log.detail ? ` · ${log.detail}` : ""}</small>
       </div>
-      <span class="ledger-delta">${positive ? "+" : ""}${log.delta}</span>
+      <span class="ledger-delta">${formatCreditDelta(log)}</span>
     </div>
   `;
 }
@@ -766,7 +1134,7 @@ function logRow(log) {
         </div>
       </div>
       <span class="coin-delta ${log.delta < 0 ? "negative" : ""}">
-        ${log.delta > 0 ? "+" : ""}${log.delta || ""}
+        ${formatCreditDelta(log)}
       </span>
     </div>
   `;
@@ -777,13 +1145,38 @@ function ruleAmount(item) {
   return match ? Number(match[0]) : 0;
 }
 
-function ruleValue(amount) {
-  return `${amount > 0 ? "+" : ""}${amount} 金币`;
+function ruleCreditType(group, item = {}) {
+  if (item.creditType) return item.creditType;
+  if (group === "bonus") return "exchange";
+  if (group === "base" || group === "penalty") return "redraw";
+  return null;
+}
+
+function creditLabel(creditType) {
+  if (creditType === "exchange") return "申请兑换";
+  if (creditType === "redraw") return "申请重抽";
+  return "记录";
+}
+
+function ruleValue(amount, creditType = "redraw") {
+  if (!creditType) return `${amount > 0 ? "+" : ""}${amount}`;
+  return `${amount > 0 ? "+" : ""}${amount} ${creditLabel(creditType)}`;
+}
+
+function chanceSummary(person) {
+  return `重抽 ${Number(person.redrawChances || 0)} · 兑换 ${Number(person.exchangeChances || 0)}`;
+}
+
+function formatCreditDelta(log) {
+  const amount = Number(log.delta || 0);
+  const creditType = creditTypeForLog(log);
+  if (!creditType) return amount ? `${amount > 0 ? "+" : ""}${amount}` : "";
+  return `${amount > 0 ? "+" : ""}${amount} ${creditLabel(creditType)}`;
 }
 
 function ruleTypeMeta(group, amount) {
   const names = { drink: "饮品", base: "基础家务", bonus: "增值家务", penalty: "扣分" };
-  return `${names[group] || "规则"} · ${ruleValue(amount)}`;
+  return `${names[group] || "规则"} · ${ruleValue(amount, ruleCreditType(group))}`;
 }
 
 function ruleRowType(group, amount) {
@@ -798,6 +1191,7 @@ function allRuleRows() {
       index,
       title: item.label,
       amount: ruleAmount(item),
+      creditType: ruleCreditType(group, item),
     })),
   );
 }
@@ -825,7 +1219,7 @@ function renderRules() {
       <div class="settings-title">
         <div>
           <strong>规则设置</strong>
-          <small>设置类型、加减方向和金币数量</small>
+          <small>基础家务给重抽机会，增值家务给兑换机会</small>
         </div>
         <button class="add-button" data-add-rule type="button">+</button>
       </div>
@@ -839,7 +1233,7 @@ function renderRules() {
                 <strong>${row.title}</strong>
                 <small>${ruleTypeMeta(row.group, row.amount)}</small>
               </div>
-              <span class="rule-amount">${ruleValue(row.amount)}</span>
+              <span class="rule-amount">${ruleValue(row.amount, row.creditType)}</span>
             </button>
           `;
         })
@@ -994,14 +1388,14 @@ function openRuleEditor(token = "") {
     const item = state.rules[group]?.[index];
     if (!item) return;
     state.editingRule = { group, index };
-    $("#ruleSheetTitle").textContent = "编辑金币规则";
+    $("#ruleSheetTitle").textContent = "编辑机会规则";
     $("#ruleNameInput").value = item.label;
     $("#ruleGroupInput").value = group;
     $("#ruleAmountInput").value = ruleAmount(item);
     $("#deleteRule").classList.remove("hidden");
   } else {
     state.editingRule = null;
-    $("#ruleSheetTitle").textContent = "新增金币规则";
+    $("#ruleSheetTitle").textContent = "新增机会规则";
     $("#ruleNameInput").value = "";
     $("#ruleGroupInput").value = "bonus";
     $("#ruleAmountInput").value = 1;
@@ -1014,7 +1408,8 @@ function saveRuleEditor() {
   const label = $("#ruleNameInput").value.trim() || "新规则";
   const group = $("#ruleGroupInput").value;
   const amount = Number($("#ruleAmountInput").value || 0);
-  const item = { label, value: ruleValue(amount) };
+  const normalizedAmount = group === "bonus" || group === "base" ? 1 : group === "penalty" ? -1 : amount;
+  const item = { label, value: ruleValue(normalizedAmount, ruleCreditType(group)) };
   if (!state.rules[group]) state.rules[group] = [];
   if (state.editingRule) {
     const previous = state.editingRule;
@@ -1031,18 +1426,19 @@ function saveRuleEditor() {
   closeSheet("ruleSheet");
   saveToday();
   renderAll();
-  showToast("金币规则已保存");
+  showToast("机会规则已保存");
 }
 
 function deleteRuleEditor() {
   if (!state.editingRule) return;
   const { group, index } = state.editingRule;
+  const deletedLabel = state.rules[group]?.[index]?.label;
   state.rules[group].splice(index, 1);
   state.editingRule = null;
   closeSheet("ruleSheet");
-  saveToday();
+  saveToday({ deletedRules: deletedLabel ? [{ group, label: deletedLabel }] : [] });
   renderAll();
-  showToast("金币规则已删除");
+  showToast("机会规则已删除");
 }
 
 function openBearEditor(indexText = "") {
@@ -1057,26 +1453,30 @@ function openBearEditor(indexText = "") {
 }
 
 async function saveBearEditor() {
-  const index = state.editingBear;
-  const isNew = index === null;
-  const current = isNew ? null : state.bears[index];
-  const name = uniqueBearName($("#bearNameInput").value || "新小熊", isNew ? -1 : index);
-  const file = $("#bearImageInput").files?.[0];
-  const image = file ? await fileToDataUrl(file) : current?.image || "assets/alice.png";
-  if (isNew) {
-    const colors = ["#92cfff", "#9fd493", "#ffc2d0", "#e0a547", "#c9935e", "#b5e2dd", "#e8c7ff"];
-    state.bears.push({ name, color: colors[state.bears.length % colors.length], image, active: activeBears().length < 6 });
-  } else {
-    const oldName = current.name;
-    current.name = name;
-    current.image = image;
-    replaceBearName(oldName, name);
+  try {
+    const index = state.editingBear;
+    const isNew = index === null;
+    const current = isNew ? null : state.bears[index];
+    const name = uniqueBearName($("#bearNameInput").value || "新小熊", isNew ? -1 : index);
+    const file = $("#bearImageInput").files?.[0];
+    const image = file ? await imageFileToSharedUrl(file, "bears") : current?.image || "assets/alice.png";
+    if (isNew) {
+      const colors = ["#92cfff", "#9fd493", "#ffc2d0", "#e0a547", "#c9935e", "#b5e2dd", "#e8c7ff"];
+      state.bears.push({ name, color: colors[state.bears.length % colors.length], image, active: activeBears().length < 6 });
+    } else {
+      const oldName = current.name;
+      current.name = name;
+      current.image = image;
+      replaceBearName(oldName, name);
+    }
+    state.editingBear = null;
+    closeSheet("bearSheet");
+    saveToday();
+    renderAll();
+    showToast("小熊档案已保存");
+  } catch (error) {
+    showToast(error.message || "图片上传失败");
   }
-  state.editingBear = null;
-  closeSheet("bearSheet");
-  saveToday();
-  renderAll();
-  showToast("小熊档案已保存");
 }
 
 function deleteBearEditor() {
@@ -1092,7 +1492,7 @@ function deleteBearEditor() {
   replaceBearName(removed.name, replacement.name);
   state.editingBear = null;
   closeSheet("bearSheet");
-  saveToday();
+  saveToday({ deletedBears: [removed.name] });
   renderAll();
   showToast("小熊已删除");
 }
@@ -1111,18 +1511,22 @@ function openMemberEditor(name) {
 }
 
 async function saveMemberEditor() {
-  const person = personByName(state.editingMember);
-  const file = $("#memberImageInput").files?.[0];
-  if (!person || !file) {
-    showToast("请选择头像图片");
-    return;
+  try {
+    const person = personByName(state.editingMember);
+    const file = $("#memberImageInput").files?.[0];
+    if (!person || !file) {
+      showToast("请选择头像图片");
+      return;
+    }
+    person.image = await imageFileToSharedUrl(file, "people");
+    state.editingMember = null;
+    closeSheet("memberSheet");
+    saveToday();
+    renderAll();
+    showToast("头像已更新");
+  } catch (error) {
+    showToast(error.message || "头像上传失败");
   }
-  person.image = await fileToDataUrl(file);
-  state.editingMember = null;
-  closeSheet("memberSheet");
-  saveToday();
-  renderAll();
-  showToast("头像已更新");
 }
 
 function fileToDataUrl(file) {
@@ -1132,6 +1536,13 @@ function fileToDataUrl(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+async function imageFileToSharedUrl(file, folder) {
+  if (state.auth.configured && state.auth.user) {
+    return uploadImageFile(file, folder);
+  }
+  return fileToDataUrl(file);
 }
 
 function openApprovalSheet() {
@@ -1171,7 +1582,7 @@ function openExchangeSheet(personName) {
   const opponentBears = state.draw.assignments[opponent.name];
   const nextTarget = state.exchangeDraft?.applicant === applicant.name ? state.exchangeDraft.targetBear : opponentBears[0];
   state.exchangeDraft = { applicant: applicant.name, targetBear: nextTarget };
-  $("#exchangeNote").textContent = `选择想申请兑换的对方小熊。`;
+  $("#exchangeNote").textContent = `选择想申请兑换的对方小熊，将消耗 1 次申请兑换机会并直接通过。`;
   renderExchangeOptions(opponentBears);
   $("#exchangeSheet").classList.remove("hidden");
 }
@@ -1272,21 +1683,10 @@ function bindEvents() {
     const confirmExchange = event.target.closest("#confirmExchange");
     if (confirmExchange) {
       const applicant = personByName(state.exchangeDraft.applicant);
-      if (state.pendingExchange || state.pendingRedraw) {
-        showToast("还有申请等待处理");
-        return;
-      }
-      if (applicant.coins < 2) {
-        showToast(`${applicant.name}金币不够`);
-        return;
-      }
-      state.pendingExchange = { ...state.exchangeDraft };
-      recordAction(applicant.name, "申请兑换", `想要${state.exchangeDraft.targetBear}`);
+      const targetBear = state.exchangeDraft.targetBear;
       state.exchangeDraft = null;
       closeSheet("exchangeSheet");
-      saveToday();
-      renderAll();
-      showToast("兑换申请已发出");
+      applyDirectExchange(applicant, targetBear);
       return;
     }
 
@@ -1301,6 +1701,12 @@ function bindEvents() {
       return;
     }
 
+    const cancelRedraw = event.target.closest("#cancelRedraw");
+    if (cancelRedraw) {
+      cancelPendingRequest("redraw");
+      return;
+    }
+
     const approveExchange = event.target.closest("#approveExchange");
     if (approveExchange) {
       const approver = otherPerson(state.pendingExchange?.applicant);
@@ -1309,6 +1715,12 @@ function bindEvents() {
         return;
       }
       openApprovalSheet();
+      return;
+    }
+
+    const cancelExchange = event.target.closest("#cancelExchange");
+    if (cancelExchange) {
+      cancelPendingRequest("exchange");
       return;
     }
 
@@ -1487,6 +1899,7 @@ function bindEvents() {
         person: state.selectedPerson,
         detail: action.dataset.logDetail,
         delta,
+        creditType: action.dataset.logCreditType || null,
       });
       saveToday();
       renderAll();
@@ -1498,11 +1911,6 @@ function bindEvents() {
     if (wish) {
       const person = personByName(wish.dataset.wishPerson);
       if (person.wishBear === wish.dataset.wishBear) return;
-      if (person.coins < 1) {
-        showToast(`${person.name}金币不够`);
-        return;
-      }
-      person.coins -= 1;
       person.wishBear = wish.dataset.wishBear;
       recordAction(person.name, "修改心愿小熊", wish.dataset.wishBear);
       addLog(TODAY_DAY, {

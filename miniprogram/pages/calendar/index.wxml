@@ -23,6 +23,7 @@
       >
         <text wx:if="{{!item.isEmpty}}">{{item.day}}</text>
         <view wx:if="{{item.hasLogs}}" class="record-dot"></view>
+        <view wx:if="{{item.hasDraw}}" class="draw-dot"></view>
       </view>
     </view>
   </view>
@@ -33,21 +34,35 @@
       <view class="person-pill {{selectedPerson === item.name ? 'active' : ''}}" wx:for="{{state.people}}" wx:key="name" data-name="{{item.name}}" bindtap="selectPerson">
         <image src="{{item.image}}" mode="aspectFit" />
         <view class="person-pill-copy">
-          <text>{{item.name}}</text>
-          <text class="muted">{{item.coins}} 金币</text>
+          <text>{{item.displayName || item.name}}</text>
+          <text class="muted">重抽 {{item.redrawChances || 0}} · 兑换 {{item.exchangeChances || 0}}</text>
         </view>
       </view>
     </view>
     <view class="tag-grid">
-      <button class="tag {{item.tone}}" wx:for="{{quickRules}}" wx:key="label" data-label="{{item.label}}" data-delta="{{item.delta}}" bindtap="addLog">{{item.label}}</button>
+      <button class="tag {{item.tone}}" wx:for="{{quickRules}}" wx:key="label" data-label="{{item.label}}" data-delta="{{item.delta}}" data-credit-type="{{item.creditType}}" bindtap="addLog">{{item.label}}</button>
     </view>
   </view>
 
   <view class="soft-card section record-card">
+    <text class="section-title">当天小熊</text>
+    <view class="draw-history-person" wx:for="{{selectedDrawPeople}}" wx:key="name">
+      <view class="draw-history-head">
+        <image src="{{item.image}}" mode="aspectFit" />
+        <text>{{item.displayName}}</text>
+      </view>
+      <view class="draw-history-bears">
+        <view class="history-bear" wx:for="{{item.bears}}" wx:for-item="bear" wx:key="name">
+          <image src="{{bear.image}}" mode="aspectFit" />
+          <text>{{bear.name}}</text>
+        </view>
+        <text wx:if="{{!item.bears.length}}" class="muted">这一天没有保存小熊结果</text>
+      </view>
+    </view>
     <text class="section-title">{{selectedDateTitle}}</text>
     <view class="log-line {{item.delta < 0 ? 'minus-log' : ''}}" wx:for="{{todayLogs}}" wx:key="index">
-      <text>{{item.person}} · {{item.type}}</text>
-      <text>{{item.delta > 0 ? '+' : ''}}{{item.delta}}</text>
+      <text>{{item.displayPerson || item.person}} · {{item.type}}</text>
+      <text>{{item.deltaText}}</text>
     </view>
     <view wx:if="{{!todayLogs.length}}" class="muted empty">今天还没有记录</view>
   </view>

@@ -350,6 +350,9 @@ h3 {
   height: 34px;
   border-radius: 50%;
   background: #dfeef4;
+  background-image:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.9), transparent 36%),
+    linear-gradient(135deg, #fff7e5 0%, #eaf6ef 100%);
   font-size: 14px;
   font-weight: 900;
   overflow: hidden;
@@ -357,6 +360,9 @@ h3 {
 
 .avatar.turtle {
   background: #dcebd8;
+  background-image:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.88), transparent 36%),
+    linear-gradient(135deg, #f2f8e8 0%, #e4f2df 100%);
 }
 
 .avatar.large {
@@ -388,7 +394,9 @@ h3 {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--badge-color) 18%, white);
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.88), transparent 36%),
+    color-mix(in srgb, var(--badge-color) 22%, white);
   overflow: hidden;
 }
 
@@ -408,7 +416,9 @@ h3 {
   min-height: 72px;
   padding: 6px 4px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.78);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.9), transparent 36%),
+    rgba(255, 255, 255, 0.78);
   font-size: 10px;
   font-weight: 760;
   text-align: center;
@@ -588,6 +598,33 @@ h3 {
   color: #9b8f86;
 }
 
+.pending-actions {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 7px;
+  justify-content: end;
+}
+
+.pending-cancel,
+.pending-wait {
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 11px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.pending-cancel {
+  background: rgba(255, 255, 255, 0.7);
+  color: #9b8f86;
+}
+
+.pending-wait {
+  background: #5ba0cf;
+  color: white;
+}
+
 .bear-archive-fab {
   display: grid;
   place-items: center;
@@ -763,6 +800,18 @@ h3 {
 .day-cell.active {
   background: var(--gold);
   color: white;
+}
+
+.day-cell.has-draw::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rose);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.78);
 }
 
 .day-cell.empty {
@@ -1350,6 +1399,16 @@ h3 {
   font-weight: 920;
 }
 
+.history-bears {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.history-bears .bear-chip {
+  min-height: 58px;
+}
+
 .person-ledger-head {
   display: flex;
   align-items: center;
@@ -1746,7 +1805,9 @@ h3 {
   padding: 10px 12px;
   border: 2px solid transparent;
   border-radius: 20px;
-  background: var(--tile);
+  background:
+    radial-gradient(circle at 22% 50%, rgba(255, 255, 255, 0.72), transparent 18%),
+    var(--tile);
   text-align: left;
   font-weight: 950;
 }

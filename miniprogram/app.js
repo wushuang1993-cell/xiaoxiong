@@ -1,7 +1,7 @@
 App({
   globalData: {
     currentUser: "闪闪鱼",
-    currentEmail: ""
+    currentOpenid: ""
   },
 
   onLaunch() {
@@ -15,7 +15,7 @@ App({
     const login = wx.getStorageSync("bearAppLogin");
     if (login?.userName) {
       this.globalData.currentUser = login.userName;
-      this.globalData.currentEmail = login.email || "";
+      this.globalData.currentOpenid = login.openid || "";
     }
   },
 

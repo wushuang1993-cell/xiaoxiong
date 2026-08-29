@@ -43,6 +43,9 @@
   width: 58rpx;
   height: 58rpx;
   border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.9), transparent 38%),
+    linear-gradient(135deg, #fff7e5 0%, #eaf6ef 100%);
 }
 
 .calendar-card {
@@ -132,10 +135,23 @@
 .record-dot {
   position: absolute;
   bottom: 4rpx;
+  left: 50%;
+  transform: translateX(-9rpx);
   width: 8rpx;
   height: 8rpx;
   border-radius: 50%;
   background: #82b58a;
+}
+
+.draw-dot {
+  position: absolute;
+  bottom: 4rpx;
+  left: 50%;
+  transform: translateX(7rpx);
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background: #df7d78;
 }
 
 .section {
@@ -202,9 +218,62 @@
 }
 
 .record-card .section-title {
+  display: block;
+  margin-top: 18rpx;
   color: #94877d;
   font-size: 26rpx;
   font-weight: 400;
+}
+
+.record-card .section-title:first-child {
+  margin-top: 0;
+}
+
+.draw-history-person {
+  margin-top: 12rpx;
+  padding: 16rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.draw-history-head {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  color: #4d3a32;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.draw-history-head image {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+}
+
+.draw-history-bears {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10rpx;
+  margin-top: 12rpx;
+}
+
+.history-bear {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  padding: 10rpx 6rpx;
+  border-radius: 18rpx;
+  background: #fffaf1;
+  color: #6a554c;
+  font-size: 21rpx;
+}
+
+.history-bear image {
+  width: 52rpx;
+  height: 46rpx;
 }
 
 .record-card .log-line:first-of-type {

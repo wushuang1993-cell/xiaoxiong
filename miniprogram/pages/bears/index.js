@@ -1,5 +1,8 @@
 const { DEFAULT_STATE, addAction, drawBears, formatDateKey, loadState, normalizeState, saveState } = require("../../utils/state");
 
+const AUCTION_FEE = 1;
+const AUCTION_DURATION_MINUTES = 180;
+
 Page({
   data: {
     dateText: "",
@@ -16,11 +19,16 @@ Page({
     exchangePickerMode: "request",
     exchangePickerTitle: "选择想兑换的小熊",
     exchangePending: null,
+    auctionBid: 1,
+    auctionTargetBear: "",
+    auctionMaxBid: 1,
+    auctionDeadlineText: "",
     wishChoices: [],
     showWishPicker: false
   },
 
   onShow() {
+    this.showShare();
     this.refresh();
   },
 
@@ -36,6 +44,10 @@ Page({
 
   setState(state) {
     const safeState = normalizeState(state);
+    safeState.people = (safeState.people || []).map((person) => ({
+      ...person,
+      chanceText: `重抽 ${Number(person.redrawChances || 0)} · 兑换 ${Number(person.exchangeChances || 0)}`
+    }));
     const assignments = safeState.draw?.assignments || {};
     const bearMap = {};
     safeState.bears.forEach((bear) => {
@@ -44,7 +56,7 @@ Page({
     const heroBear = safeState.bears[new Date().getDate() % safeState.bears.length] || safeState.bears[0] || {};
     const todayId = formatDateKey();
     const currentUser = getApp().globalData.currentUser || "闪闪鱼";
-    const isLoggedIn = Boolean(getApp().globalData.currentEmail);
+    const isLoggedIn = Boolean(getApp().globalData.currentOpenid);
     this.setData({
       dateText: this.formatDate(),
       state: safeState,
@@ -56,10 +68,11 @@ Page({
       pendingNotice: this.pendingNoticeForUser(safeState, currentUser),
       todayActions: (safeState.actions || []).filter((action) => action.date === todayId)
     });
+    this.expireAuctionIfNeeded(safeState);
   },
 
   requireLogin() {
-    if (getApp().globalData.currentEmail) return true;
+    if (getApp().globalData.currentOpenid) return true;
     wx.showToast({ title: "请先登录", icon: "none" });
     wx.switchTab({ url: "/pages/rules/index" });
     return false;
@@ -67,25 +80,43 @@ Page({
 
   pendingNoticeForUser(state, currentUser) {
     const personImage = (name) => state.people.find((person) => person.name === name)?.image || "";
+    const displayName = (name) => state.people.find((person) => person.name === name)?.displayName || name;
     if (state.pendingRedraw) {
       return {
         type: "redraw",
         applicant: state.pendingRedraw.applicant,
+        applicantDisplay: displayName(state.pendingRedraw.applicant),
         applicantImage: personImage(state.pendingRedraw.applicant),
         mine: state.pendingRedraw.applicant === currentUser,
         title: "重抽申请",
-        detail: `${state.pendingRedraw.applicant} 申请重新抽签`
+        detail: `${displayName(state.pendingRedraw.applicant)} 申请重新抽签`
+      };
+    }
+    if (state.pendingAuction) {
+      const expiresAt = new Date(state.pendingAuction.expiresAt);
+      const minutesLeft = Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 60000));
+      return {
+        type: "auction",
+        applicant: state.pendingAuction.applicant,
+        applicantDisplay: displayName(state.pendingAuction.applicant),
+        applicantImage: personImage(state.pendingAuction.applicant),
+        targetBear: state.pendingAuction.targetBear,
+        bid: state.pendingAuction.bid,
+        mine: state.pendingAuction.applicant === currentUser,
+        title: "小熊竞拍",
+        detail: `${displayName(state.pendingAuction.applicant)} 出价 ${state.pendingAuction.bid} 金币竞拍 ${state.pendingAuction.targetBear} · 剩余约 ${minutesLeft} 分钟`
       };
     }
     if (state.pendingExchange) {
       return {
         type: "exchange",
         applicant: state.pendingExchange.applicant,
+        applicantDisplay: displayName(state.pendingExchange.applicant),
         applicantImage: personImage(state.pendingExchange.applicant),
         targetBear: state.pendingExchange.targetBear,
         mine: state.pendingExchange.applicant === currentUser,
-        title: "兑换申请",
-        detail: `${state.pendingExchange.applicant} 想兑换 ${state.pendingExchange.targetBear}`
+        title: "旧版兑换申请",
+        detail: `${displayName(state.pendingExchange.applicant)} 想兑换 ${state.pendingExchange.targetBear}，请取消后重新发起竞拍`
       };
     }
     return null;
@@ -97,9 +128,9 @@ Page({
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 | ${week}`;
   },
 
-  async persist(state, message) {
+  async persist(state, message, mergeOptions = {}) {
     try {
-      await saveState(state);
+      await saveState(state, mergeOptions);
       this.setState(state);
       wx.showToast({ title: message, icon: "none" });
     } catch (error) {
@@ -108,20 +139,52 @@ Page({
     }
   },
 
-  addCoinLog(state, personName, label, delta) {
+  onShareAppMessage() {
+    return {
+      title: "今晚小熊抽签和运动排行",
+      path: "/pages/bears/index"
+    };
+  },
+
+  onShareTimeline() {
+    return {
+      title: "今晚小熊抽签和运动排行"
+    };
+  },
+
+  showShare() {
+    if (!wx.showShareMenu) return;
+    wx.showShareMenu({ menus: ["shareAppMessage", "shareTimeline"] });
+  },
+
+  addChanceLog(state, personName, label, delta, creditType) {
     const day = new Date().getDate();
     const today = new Date();
     state.logs = state.logs || {};
     state.logs[day] = state.logs[day] || [];
     state.logs[day].push({
+      id: `log-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       person: personName,
       type: label,
       detail: label,
       delta,
+      creditType,
       date: formatDateKey(today),
       earnedDay: day,
       createdAt: today.toISOString()
     });
+  },
+
+  addCoinLog(state, personName, label, delta) {
+    this.addChanceLog(state, personName, label, delta, null);
+  },
+
+  storeDrawHistory(state) {
+    if (!state.draw?.assignments) return;
+    state.drawHistory = {
+      ...(state.drawHistory || {}),
+      [formatDateKey()]: JSON.parse(JSON.stringify(state.draw))
+    };
   },
 
   handleDraw() {
@@ -133,7 +196,8 @@ Page({
     }
     state.draw = drawBears(state);
     state.drawUsed = true;
-    state.actions = addAction(state, getApp().globalData.currentUser, "今日已抽签", "");
+    this.storeDrawHistory(state);
+    state.actions = addAction(state, getApp().globalData.currentUser, "今日已抽签", "", `action-${formatDateKey()}-draw-${getApp().globalData.currentUser}`);
     this.persist(state, "已抽签");
   },
 
@@ -142,17 +206,20 @@ Page({
     const state = normalizeState(this.data.state);
     const currentUser = getApp().globalData.currentUser || "闪闪鱼";
     const currentPerson = state.people.find((person) => person.name === currentUser);
-    if (!currentPerson || currentPerson.coins < 3) {
-      wx.showToast({ title: "金币不足，不能重抽", icon: "none" });
+    if (!state.drawUsed) {
+      wx.showToast({ title: "请先抽签", icon: "none" });
       return;
     }
-    if (state.pendingRedraw || state.pendingExchange) {
-      wx.showToast({ title: "已有待处理申请", icon: "none" });
+    if (!currentPerson || Number(currentPerson.redrawChances || 0) < 1) {
+      wx.showToast({ title: "没有重抽机会", icon: "none" });
       return;
     }
-    state.pendingRedraw = { applicant: currentUser, date: formatDateKey() };
-    state.actions = addAction(state, getApp().globalData.currentUser, "申请重抽", "等待对方同意");
-    this.persist(state, "已申请");
+    state.draw = drawBears(state);
+    state.drawUsed = true;
+    this.storeDrawHistory(state);
+    this.addChanceLog(state, currentUser, "重新抽签", -1, "redraw");
+    state.actions = addAction(state, currentUser, "直接重抽", "消耗 1 次申请重抽机会");
+    this.persist(state, "已重抽");
   },
 
   requestExchange() {
@@ -160,16 +227,12 @@ Page({
     const state = normalizeState(this.data.state);
     const currentUser = getApp().globalData.currentUser || "闪闪鱼";
     const currentPerson = state.people.find((person) => person.name === currentUser);
-    if (!currentPerson || currentPerson.coins < 2) {
-      wx.showToast({ title: "金币不足，不能兑换", icon: "none" });
+    if (!currentPerson || Number(currentPerson.exchangeChances || 0) < 1) {
+      wx.showToast({ title: "没有兑换机会", icon: "none" });
       return;
     }
     if (!state.drawUsed) {
       wx.showToast({ title: "请先抽签", icon: "none" });
-      return;
-    }
-    if (state.pendingRedraw || state.pendingExchange) {
-      wx.showToast({ title: "已有待处理申请", icon: "none" });
       return;
     }
     const opponent = state.people.find((person) => person.name !== currentUser)?.name;
@@ -181,30 +244,142 @@ Page({
     this.setData({
       exchangeChoices: opponentBears.map((name) => ({ name, image: state.bears.find((bear) => bear.name === name)?.image || "" })),
       showExchangePicker: true,
-      exchangePickerMode: "request",
-      exchangePickerTitle: "选择想兑换的小熊",
-      exchangePending: null
+      exchangePickerMode: "exchange",
+      exchangePickerTitle: "申请兑换",
+      exchangePending: null,
+      auctionTargetBear: opponentBears[0],
+      auctionBid: 1,
+      auctionMaxBid: 1,
+      auctionDeadlineText: this.auctionDeadlineText()
     });
   },
 
   closeExchangePicker() {
-    this.setData({ showExchangePicker: false, exchangeChoices: [], exchangePending: null });
+    this.setData({ showExchangePicker: false, exchangeChoices: [], exchangePending: null, auctionTargetBear: "" });
   },
 
   chooseExchangeBear(event) {
     if (!this.requireLogin()) return;
     const selectedBear = event.currentTarget.dataset.name;
     if (!selectedBear) return;
-    if (this.data.exchangePickerMode === "approve") {
-      this.completeExchange(selectedBear);
+    this.setData({ auctionTargetBear: selectedBear });
+  },
+
+  changeAuctionBid(delta) {
+    const nextBid = Math.min(this.data.auctionMaxBid, Math.max(1, Number(this.data.auctionBid || 1) + delta));
+    this.setData({ auctionBid: nextBid });
+  },
+
+  increaseAuctionBid() {
+    this.changeAuctionBid(1);
+  },
+
+  decreaseAuctionBid() {
+    this.changeAuctionBid(-1);
+  },
+
+  onAuctionBidInput(event) {
+    const value = Number(String(event.detail.value || "").replace(/[^\d]/g, ""));
+    const bid = Math.min(this.data.auctionMaxBid, Math.max(1, value || 1));
+    this.setData({ auctionBid: bid });
+  },
+
+  auctionDeadline() {
+    const now = new Date();
+    const durationEnd = new Date(now.getTime() + AUCTION_DURATION_MINUTES * 60000);
+    const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 0, 0);
+    return durationEnd.getTime() > dayEnd.getTime() ? dayEnd : durationEnd;
+  },
+
+  auctionDeadlineText() {
+    const deadline = this.auctionDeadline();
+    return `${deadline.getHours()}:${String(deadline.getMinutes()).padStart(2, "0")}`;
+  },
+
+  hasAuctionUsedToday(state, userName) {
+    const todayId = formatDateKey();
+    return (state.actions || []).some((action) => action.date === todayId && action.person === userName && action.action === "发起竞拍");
+  },
+
+  confirmExchange() {
+    if (!this.requireLogin()) return;
+    const nextState = normalizeState(this.data.state);
+    const currentUser = getApp().globalData.currentUser || "闪闪鱼";
+    const currentPerson = nextState.people.find((person) => person.name === currentUser);
+    const targetBear = this.data.auctionTargetBear;
+    if (!targetBear) {
+      wx.showToast({ title: "先选择小熊", icon: "none" });
       return;
     }
-    const currentUser = getApp().globalData.currentUser || "闪闪鱼";
+    if (!currentPerson || Number(currentPerson.exchangeChances || 0) < 1) {
+      wx.showToast({ title: "没有兑换机会", icon: "none" });
+      return;
+    }
+    const opponent = nextState.people.find((person) => person.name !== currentUser)?.name;
+    const assignments = nextState.draw?.assignments || {};
+    const mine = assignments[currentUser] || [];
+    const theirs = assignments[opponent] || [];
+    const targetIndex = theirs.indexOf(targetBear);
+    if (targetIndex < 0) {
+      wx.showToast({ title: "这只小熊不能兑换", icon: "none" });
+      return;
+    }
+    const offerBear = mine[0] || "";
+    if (offerBear) {
+      mine[0] = targetBear;
+      theirs[targetIndex] = offerBear;
+    } else {
+      theirs.splice(targetIndex, 1);
+      mine.push(targetBear);
+    }
+    assignments[currentUser] = mine;
+    assignments[opponent] = theirs;
+    this.storeDrawHistory(nextState);
+    this.addChanceLog(nextState, currentUser, "兑换小熊", -1, "exchange");
+    nextState.actions = addAction(nextState, currentUser, "直接兑换", targetBear);
+    this.setData({ showExchangePicker: false, exchangeChoices: [], auctionTargetBear: "" });
+    this.persist(nextState, "已兑换");
+  },
+
+  confirmAuction() {
+    if (!this.requireLogin()) return;
     const nextState = normalizeState(this.data.state);
-    nextState.pendingExchange = { applicant: currentUser, targetBear: selectedBear, date: formatDateKey() };
-    nextState.actions = addAction(nextState, currentUser, "申请兑换", selectedBear);
-    this.setData({ showExchangePicker: false, exchangeChoices: [] });
-    this.persist(nextState, "已申请兑换");
+    const currentUser = getApp().globalData.currentUser || "闪闪鱼";
+    const currentPerson = nextState.people.find((person) => person.name === currentUser);
+    const bid = Number(this.data.auctionBid || 1);
+    const targetBear = this.data.auctionTargetBear;
+    if (!targetBear) {
+      wx.showToast({ title: "先选择小熊", icon: "none" });
+      return;
+    }
+    if (bid < 1) {
+      wx.showToast({ title: "出价至少为 1 金币", icon: "none" });
+      return;
+    }
+    if (!currentPerson || currentPerson.coins < bid + AUCTION_FEE) {
+      wx.showToast({ title: "金币不足，无法发起竞拍", icon: "none" });
+      return;
+    }
+    if (this.hasAuctionUsedToday(nextState, currentUser)) {
+      wx.showToast({ title: "今天已经发起过竞拍了", icon: "none" });
+      return;
+    }
+    const deadline = this.auctionDeadline();
+    const now = new Date();
+    nextState.pendingAuction = {
+      applicant: currentUser,
+      targetBear,
+      bid,
+      fee: AUCTION_FEE,
+      date: formatDateKey(now),
+      createdAt: now.toISOString(),
+      expiresAt: deadline.toISOString()
+    };
+    this.addCoinLog(nextState, currentUser, "竞拍手续费", -AUCTION_FEE);
+    this.addCoinLog(nextState, currentUser, "竞拍冻结", -bid);
+    nextState.actions = addAction(nextState, currentUser, "发起竞拍", `${targetBear} · ${bid} 金币`);
+    this.setData({ showExchangePicker: false, exchangeChoices: [], auctionTargetBear: "" });
+    this.persist(nextState, "竞拍已发起");
   },
 
   approvePending() {
@@ -215,7 +390,11 @@ Page({
       this.approveRedraw();
       return;
     }
-    this.approveExchange();
+    if (notice.type === "exchange") {
+      wx.showToast({ title: "请取消后重新竞拍", icon: "none" });
+      return;
+    }
+    this.acceptAuction();
   },
 
   rejectPending() {
@@ -224,11 +403,36 @@ Page({
     if (!notice || notice.mine) return;
     const state = normalizeState(this.data.state);
     const currentUser = getApp().globalData.currentUser || "闪闪鱼";
-    const detail = notice.type === "redraw" ? "重抽申请" : `兑换 ${notice.targetBear}`;
+    const detail = notice.type === "redraw" ? "重抽申请" : `竞拍 ${notice.targetBear}`;
     state.pendingRedraw = null;
-    state.pendingExchange = null;
+    if (notice.type === "auction" && state.pendingAuction) {
+      this.addCoinLog(state, state.pendingAuction.applicant, "竞拍退款", state.pendingAuction.bid);
+      state.pendingAuction = null;
+    }
+    if (notice.type === "exchange") state.pendingExchange = null;
     state.actions = addAction(state, currentUser, "拒绝申请", detail);
-    this.persist(state, "已拒绝");
+    this.persist(state, "已拒绝", { clearPending: notice.type });
+  },
+
+  cancelPending() {
+    if (!this.requireLogin()) return;
+    const notice = this.data.pendingNotice;
+    if (!notice || !notice.mine) return;
+    const state = normalizeState(this.data.state);
+    const currentUser = getApp().globalData.currentUser || "闪闪鱼";
+    if (notice.type === "redraw") {
+      state.pendingRedraw = null;
+      state.actions = addAction(state, currentUser, "取消重抽", "已取消申请");
+      this.persist(state, "已取消", { clearPending: "redraw" });
+      return;
+    }
+    if (notice.type === "auction" && state.pendingAuction) {
+      this.addCoinLog(state, state.pendingAuction.applicant, "竞拍退款", state.pendingAuction.bid);
+      state.pendingAuction = null;
+    }
+    if (notice.type === "exchange") state.pendingExchange = null;
+    state.actions = addAction(state, currentUser, "取消竞拍", notice.targetBear || "");
+    this.persist(state, "已取消", { clearPending: notice.type === "exchange" ? "exchange" : "auction" });
   },
 
   approveRedraw() {
@@ -245,42 +449,39 @@ Page({
     this.persist(state, "已同意重抽");
   },
 
-  approveExchange() {
+  acceptAuction() {
     const state = normalizeState(this.data.state);
-    const pending = state.pendingExchange;
+    const pending = state.pendingAuction;
     const currentUser = getApp().globalData.currentUser || "闪闪鱼";
     if (!pending || pending.applicant === currentUser) return;
-    const applicantBears = state.draw?.assignments?.[pending.applicant] || [];
-    if (!applicantBears.length) {
-      wx.showToast({ title: "对方没有可交换小熊", icon: "none" });
+    if (new Date(pending.expiresAt).getTime() <= Date.now()) {
+      this.expireAuctionIfNeeded(state);
       return;
     }
-    this.setData({
-      exchangeChoices: applicantBears.map((name) => ({ name, image: state.bears.find((bear) => bear.name === name)?.image || "" })),
-      showExchangePicker: true,
-      exchangePickerMode: "approve",
-      exchangePickerTitle: "选择给对方的小熊",
-      exchangePending: pending
-    });
+    const assignments = state.draw?.assignments || {};
+    if (!(assignments[currentUser] || []).includes(pending.targetBear)) {
+      wx.showToast({ title: "小熊状态已变化", icon: "none" });
+      state.pendingAuction = null;
+      this.addCoinLog(state, pending.applicant, "竞拍退款", pending.bid);
+      this.persist(state, "竞拍已取消", { clearPending: "auction" });
+      return;
+    }
+    assignments[currentUser] = (assignments[currentUser] || []).filter((bear) => bear !== pending.targetBear);
+    assignments[pending.applicant] = [...(assignments[pending.applicant] || []), pending.targetBear];
+    this.addCoinLog(state, currentUser, "竞拍成交", pending.bid);
+    state.pendingAuction = null;
+    state.actions = addAction(state, currentUser, "接受竞拍", `${pending.targetBear} · ${pending.bid} 金币`);
+    this.persist(state, "竞拍成交", { clearPending: "auction" });
   },
 
-  completeExchange(exchangeBear) {
-    const nextState = normalizeState(this.data.state);
-    const pending = this.data.exchangePending || nextState.pendingExchange;
-    const currentUser = getApp().globalData.currentUser || "闪闪鱼";
-    if (!pending || pending.applicant === currentUser || !nextState.draw?.assignments) return;
-    const assignments = nextState.draw.assignments;
-    assignments[pending.applicant] = (assignments[pending.applicant] || []).map((bear) =>
-      bear === exchangeBear ? pending.targetBear : bear
-    );
-    assignments[currentUser] = (assignments[currentUser] || []).map((bear) =>
-      bear === pending.targetBear ? exchangeBear : bear
-    );
-    nextState.pendingExchange = null;
-    this.addCoinLog(nextState, pending.applicant, "兑换小熊", -2);
-    nextState.actions = addAction(nextState, currentUser, "同意兑换", `${pending.targetBear} 换 ${exchangeBear}`);
-    this.setData({ showExchangePicker: false, exchangeChoices: [], exchangePending: null });
-    this.persist(nextState, "已完成兑换");
+  expireAuctionIfNeeded(state) {
+    const pending = state.pendingAuction;
+    if (!pending || !pending.expiresAt || new Date(pending.expiresAt).getTime() > Date.now()) return;
+    const nextState = normalizeState(state);
+    this.addCoinLog(nextState, pending.applicant, "竞拍退款", pending.bid);
+    nextState.pendingAuction = null;
+    nextState.actions = addAction(nextState, pending.applicant, "竞拍流拍", pending.targetBear);
+    this.persist(nextState, "竞拍已流拍", { clearPending: "auction" });
   },
 
   openWishPicker() {

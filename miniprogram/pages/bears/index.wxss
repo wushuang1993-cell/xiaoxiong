@@ -63,6 +63,7 @@
   z-index: 1;
   width: 244rpx;
   height: 204rpx;
+  background: transparent;
 }
 
 .wish-button {
@@ -124,12 +125,15 @@
   justify-content: center;
   overflow: hidden;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.56);
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.9), transparent 38%),
+    linear-gradient(135deg, #fff7e5 0%, #eaf6ef 100%);
 }
 
 .person-avatar {
   width: 66rpx;
   height: 66rpx;
+  border-radius: 50%;
 }
 
 .name {
@@ -162,7 +166,9 @@
   box-sizing: border-box;
   padding: 8rpx 4rpx 10rpx;
   border-radius: 20rpx;
-  background: rgba(255, 255, 255, 0.72);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.9), transparent 36%),
+    rgba(255, 255, 255, 0.72);
   text-align: center;
   color: #5b4942;
   font-size: 22rpx;
@@ -181,6 +187,7 @@
 .mini-bear-art image {
   width: 72rpx;
   height: 68rpx;
+  background: transparent;
 }
 
 .empty-bear {
@@ -244,7 +251,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.68);
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.9), transparent 38%),
+    linear-gradient(135deg, #fff7e5 0%, #eaf6ef 100%);
 }
 
 .pending-avatar {
@@ -303,10 +312,10 @@
 }
 
 .pending-button {
-  width: 100rpx;
+  min-width: 100rpx;
   height: 60rpx;
   margin: 0;
-  padding: 0;
+  padding: 0 20rpx;
   border-radius: 999rpx;
   color: #fff;
   font-size: 27rpx;
@@ -319,7 +328,18 @@
 }
 
 .pending-button.reject {
-  background: #c29a72;
+  background: rgba(255, 255, 255, 0.72);
+  color: #9b8b82;
+}
+
+.pending-button.cancel {
+  background: rgba(255, 255, 255, 0.72);
+  color: #9b8b82;
+}
+
+.pending-button.wait {
+  min-width: 180rpx;
+  background: #9f7650;
 }
 
 .audit {
@@ -373,6 +393,14 @@
   font-weight: 700;
 }
 
+.picker-note {
+  display: block;
+  margin-top: 12rpx;
+  color: #8b7c73;
+  font-size: 25rpx;
+  line-height: 1.35;
+}
+
 .picker-close {
   width: 44rpx;
   height: 44rpx;
@@ -402,7 +430,9 @@
   box-sizing: border-box;
   padding: 18rpx 10rpx;
   border-radius: 24rpx;
-  background: rgba(255, 255, 255, 0.68);
+  background:
+    radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.9), transparent 36%),
+    rgba(255, 255, 255, 0.68);
   text-align: center;
   color: #5b4942;
   font-size: 27rpx;
@@ -418,4 +448,75 @@
   height: 72rpx;
   display: block;
   margin: 0 auto 10rpx;
+}
+
+.bid-panel {
+  margin-top: 24rpx;
+  padding: 22rpx;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.bid-copy {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #5b4942;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.bid-control {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.bid-step {
+  width: 62rpx;
+  height: 62rpx;
+  border-radius: 50%;
+  background: #f8f0e3;
+  color: #9f7650;
+  font-size: 34rpx;
+  line-height: 62rpx;
+  text-align: center;
+}
+
+.bid-step.plus {
+  background: #e3f0dc;
+  color: #6a9d70;
+}
+
+.coin-button {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.78), transparent 28%),
+    linear-gradient(145deg, #ffd86c 0%, #d99a49 100%);
+  color: #835b17;
+  font-size: 28rpx;
+  font-weight: 800;
+  line-height: 112rpx;
+  text-align: center;
+  box-shadow: 0 12rpx 24rpx rgba(151, 101, 28, 0.18);
+}
+
+.coin-button:active {
+  transform: scale(0.94);
+}
+
+.bid-input {
+  flex: 1;
+  min-width: 0;
+  height: 72rpx;
+  padding: 0 18rpx;
+  border-radius: 20rpx;
+  background: #fffaf1;
+  color: #4d3a32;
+  font-size: 34rpx;
+  font-weight: 800;
+  text-align: center;
 }

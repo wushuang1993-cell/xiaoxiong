@@ -2,6 +2,7 @@
   "pages": [
     "pages/bears/index",
     "pages/calendar/index",
+    "pages/sports/index",
     "pages/rules/index"
   ],
   "window": {
@@ -33,6 +34,12 @@
         "text": "日历",
         "iconPath": "assets/tab-calendar.png",
         "selectedIconPath": "assets/tab-calendar-active.png"
+      },
+      {
+        "pagePath": "pages/sports/index",
+        "text": "运动",
+        "iconPath": "assets/tab-sports.png",
+        "selectedIconPath": "assets/tab-sports-active.png"
       },
       {
         "pagePath": "pages/rules/index",
