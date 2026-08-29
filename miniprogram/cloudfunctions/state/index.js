@@ -9,7 +9,7 @@ const STATE_COLLECTION = "app_states";
 const STATE_DOC_ID = "main";
 const REMOVED_BEAR_NAMES = [];
 const ALLOWED_PERSON_META = {
-  闪闪鱼: { wechatId: "shuang_wu83" },
+  闪闪鱼: { wechatId: "shuang_wu83", openid: "oARbkxZvJaqo4ZvUb7cYzebpxi2k" },
   杰尼龟: { wechatId: "Alan0Xu" }
 };
 const ALLOWED_PERSON_NAMES = Object.keys(ALLOWED_PERSON_META);
@@ -84,14 +84,24 @@ function sanitizePeople(people = []) {
     .filter((person) => ALLOWED_PERSON_NAMES.includes(person.name))
     .map((person) => ({
       ...person,
-      wechatId: person.wechatId || ALLOWED_PERSON_META[person.name]?.wechatId || ""
+      wechatId: person.wechatId || ALLOWED_PERSON_META[person.name]?.wechatId || "",
+      openid: person.openid || ALLOWED_PERSON_META[person.name]?.openid || ""
     }));
 }
 
 function findAuthorizedPerson(payload, wxContext) {
   const openid = wxContext.OPENID || "";
   const unionid = wxContext.UNIONID || "";
-  return sanitizePeople(payload?.people || []).find((person) => {
+  const configuredPeople = ALLOWED_PERSON_NAMES.map((name) => {
+    const savedPerson = sanitizePeople(payload?.people || []).find((person) => person.name === name) || {};
+    return {
+      name,
+      displayName: name,
+      ...ALLOWED_PERSON_META[name],
+      ...savedPerson
+    };
+  });
+  return configuredPeople.find((person) => {
     if (person.openid && person.openid === openid) return true;
     if (person.unionid && unionid && person.unionid === unionid) return true;
     return false;
