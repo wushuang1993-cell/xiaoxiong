@@ -137,14 +137,17 @@ Page({
       name: "state",
       data: { action: "login" }
     }).then((result) => {
-      if (!result?.result?.ok || !result.result.openid || !result.result.userName) {
-        console.warn("[微信登录返回]", result?.result || result);
-        if (String(result?.result?.message || "").includes("Unsupported state action")) {
+      const payload = result?.result || {};
+      if (!payload.ok || !payload.openid || !payload.userName) {
+        console.warn("[微信登录返回]", payload || result);
+        if (String(payload.message || "").includes("Unsupported state action")) {
           throw new Error("请重新部署 state 云函数");
         }
-        throw new Error(result?.result?.message || "微信登录失败");
+        const error = new Error(payload.message || "微信登录失败");
+        error.loginPayload = payload;
+        throw error;
       }
-      return result.result;
+      return payload;
     });
   },
 
@@ -316,8 +319,42 @@ Page({
     } catch (error) {
       wx.hideLoading();
       console.warn("[微信登录失败]", error);
+      if (error.loginPayload?.openid && error.message === "联系管理员获得授权") {
+        this.showAuthorizationInfo(error.loginPayload);
+        return;
+      }
       wx.showToast({ title: error.message || "微信登录失败", icon: "none" });
     }
+  },
+
+  showAuthorizationInfo(payload) {
+    const openid = payload.openid || "";
+    if (!openid) {
+      wx.showModal({
+        title: "联系管理员获得授权",
+        content: "没有获取到 openid，请先重新部署 state 云函数后再试。",
+        showCancel: false
+      });
+      return;
+    }
+    const content = `请把这个 openid 发给管理员：\n${openid}`;
+    if (!wx.setClipboardData) {
+      wx.showModal({ title: "联系管理员获得授权", content, showCancel: false });
+      return;
+    }
+    wx.setClipboardData({
+      data: openid,
+      success: () => {
+        wx.showModal({
+          title: "联系管理员获得授权",
+          content: `openid 已复制。\n${content}`,
+          showCancel: false
+        });
+      },
+      fail: () => {
+        wx.showModal({ title: "联系管理员获得授权", content, showCancel: false });
+      }
+    });
   },
 
   loginAsPerson(userName, openid, state = this.data.state, login = {}) {
