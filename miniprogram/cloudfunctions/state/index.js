@@ -88,6 +88,16 @@ function sanitizePeople(people = []) {
     }));
 }
 
+function findAuthorizedPerson(payload, wxContext) {
+  const openid = wxContext.OPENID || "";
+  const unionid = wxContext.UNIONID || "";
+  return sanitizePeople(payload?.people || []).find((person) => {
+    if (person.openid && person.openid === openid) return true;
+    if (person.unionid && unionid && person.unionid === unionid) return true;
+    return false;
+  });
+}
+
 function mergeDrawHistory(localHistory = {}, remoteHistory = {}) {
   return { ...(remoteHistory || {}), ...(localHistory || {}) };
 }
@@ -269,8 +279,27 @@ exports.main = async (event = {}) => {
 
     if (action === "login") {
       const wxContext = cloud.getWXContext();
+      const current = await getState();
+      const person = findAuthorizedPerson(current.payload, wxContext);
+      if (!person) {
+        console.warn("[xiaoxiong-login-denied]", {
+          openid: wxContext.OPENID || "",
+          appid: wxContext.APPID || "",
+          unionid: wxContext.UNIONID || ""
+        });
+        return {
+          ok: false,
+          message: "联系管理员获得授权",
+          openid: wxContext.OPENID || "",
+          appid: wxContext.APPID || "",
+          unionid: wxContext.UNIONID || ""
+        };
+      }
       return {
         ok: true,
+        userName: person.name,
+        displayName: person.displayName || person.name,
+        wechatId: person.wechatId || ALLOWED_PERSON_META[person.name]?.wechatId || "",
         openid: wxContext.OPENID || "",
         appid: wxContext.APPID || "",
         unionid: wxContext.UNIONID || ""

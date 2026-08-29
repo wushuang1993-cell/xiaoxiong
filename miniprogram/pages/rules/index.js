@@ -7,18 +7,7 @@ const RULE_GROUPS = [
   { key: "drink", label: "饮品", title: "饮品" }
 ];
 
-const ALLOWED_LOGIN_USERS = [
-  { name: "闪闪鱼", wechatId: "shuang_wu83" },
-  { name: "杰尼龟", wechatId: "Alan0Xu" }
-];
-
-const DEFAULT_LOGIN_CHOICES = ALLOWED_LOGIN_USERS.map((person) => ({
-  ...person,
-  displayName: person.name,
-  image: person.name === "杰尼龟" ? "../../assets/jienigui.png" : "../../assets/shanshanyu.png",
-  isSelected: person.name === "闪闪鱼",
-  bound: false
-}));
+const ALLOWED_LOGIN_NAMES = ["闪闪鱼", "杰尼龟"];
 
 function amountToValue(amount, groupKey) {
   const value = Number(amount || 0);
@@ -45,9 +34,6 @@ Page({
     loginSummary: "闪闪鱼",
     loginAvatar: "../../assets/shanshanyu.png",
     displayNameInput: "",
-    selectedLoginName: "闪闪鱼",
-    loginChoices: DEFAULT_LOGIN_CHOICES,
-    wechatInfoText: "小程序只能读取 openid，不能读取真实微信号。",
     ruleGroups: RULE_GROUPS,
     editingRuleGroupIndex: 0,
     selectedRuleGroupLabel: RULE_GROUPS[0].label,
@@ -120,8 +106,6 @@ Page({
       state: safeState,
       loginAvatar: this.data.isLoggedIn ? loginPerson?.image || this.avatarForUser(this.data.currentUser) : this.data.loginAvatar,
       displayNameInput: loginPerson?.displayName || this.data.currentUser,
-      loginChoices: this.loginChoicesForState(safeState),
-      wechatInfoText: this.data.currentOpenid ? `openid: ${this.data.currentOpenid}` : "小程序只能读取 openid，不能读取真实微信号。",
       ruleSections: RULE_GROUPS.map((group) => ({
         ...group,
         rules: decorateRules(safeState.rules[group.key] || [])
@@ -153,32 +137,14 @@ Page({
       name: "state",
       data: { action: "login" }
     }).then((result) => {
-      if (!result?.result?.ok || !result.result.openid) {
+      if (!result?.result?.ok || !result.result.openid || !result.result.userName) {
+        console.warn("[微信登录返回]", result?.result || result);
+        if (String(result?.result?.message || "").includes("Unsupported state action")) {
+          throw new Error("请重新部署 state 云函数");
+        }
         throw new Error(result?.result?.message || "微信登录失败");
       }
       return result.result;
-    });
-  },
-
-  loginChoicesForState(state, selectedName = this.data.selectedLoginName) {
-    return ALLOWED_LOGIN_USERS.map((allowed) => {
-      const person = (state.people || []).find((item) => item.name === allowed.name);
-      return {
-        ...allowed,
-        displayName: person?.displayName || allowed.name,
-        image: person?.image || this.avatarForUser(allowed.name),
-        isSelected: selectedName === allowed.name,
-        bound: Boolean(person?.openid)
-      };
-    });
-  },
-
-  selectLoginIdentity(event) {
-    const name = event.currentTarget.dataset.name;
-    if (!ALLOWED_LOGIN_USERS.some((item) => item.name === name)) return;
-    this.setData({
-      selectedLoginName: name,
-      loginChoices: this.loginChoicesForState(this.data.state, name)
     });
   },
 
@@ -346,7 +312,7 @@ Page({
       const login = await this.callLoginFunction();
       const safeState = normalizeState(this.data.state);
       wx.hideLoading();
-      await this.loginWithAllowedIdentity(login, safeState);
+      this.loginAsPerson(login.userName, login.openid, safeState, login);
     } catch (error) {
       wx.hideLoading();
       console.warn("[微信登录失败]", error);
@@ -354,80 +320,9 @@ Page({
     }
   },
 
-  async loginWithAllowedIdentity(login, state) {
-    const selected = ALLOWED_LOGIN_USERS.find((item) => item.name === this.data.selectedLoginName);
-    if (!selected) throw new Error("请选择允许登录的身份");
-    const openid = login.openid || "";
-    if (!openid) throw new Error("没有获取到微信 openid");
-
-    const matched = (state.people || []).find((person) => person.openid === openid);
-    if (matched && matched.name !== selected.name) {
-      throw new Error(`当前微信已绑定为${matched.displayName || matched.name}`);
-    }
-
-    const nextState = normalizeState(state);
-    const target = nextState.people.find((person) => person.name === selected.name);
-    if (!target) throw new Error("没有找到允许登录的身份");
-    if (target.openid && target.openid !== openid) {
-      throw new Error(`${target.displayName || target.name}已绑定其他微信`);
-    }
-
-    target.wechatId = selected.wechatId;
-    if (!target.openid) {
-      await this.confirmIdentityBinding(selected);
-      target.openid = openid;
-      nextState.actions = addAction(nextState, target.name, "绑定微信登录", selected.wechatId);
-      await saveState(nextState);
-      this.renderState(nextState);
-      wx.showToast({ title: "微信已绑定", icon: "none" });
-    }
-    this.loginAsPerson(target.name, openid, nextState, login);
-  },
-
-  confirmIdentityBinding(selected) {
-    return new Promise((resolve, reject) => {
-      wx.showModal({
-        title: "确认绑定身份",
-        content: `请确认当前微信就是 ${selected.name}（${selected.wechatId}）。小程序不能读取真实微信号，绑定后会记住当前 openid。`,
-        confirmText: "确认绑定",
-        success: (result) => {
-          if (result.confirm) {
-            resolve();
-          } else {
-            reject(new Error("已取消绑定"));
-          }
-        },
-        fail: reject
-      });
-    });
-  },
-
-  bindWechatIdentity(openid, state) {
-    const candidates = (state.people || []).filter((person) => ALLOWED_LOGIN_USERS.some((allowed) => allowed.name === person.name) && !person.openid);
-    const itemList = candidates.map((person) => `绑定 ${person.displayName || person.name}`);
-    if (!itemList.length) {
-      wx.showToast({ title: "未授权登录", icon: "none" });
-      return;
-    }
-    wx.showActionSheet({
-      itemList,
-      success: (result) => {
-        const nextState = normalizeState(state);
-        let userName = "";
-        const target = nextState.people.find((person) => person.name === candidates[result.tapIndex].name);
-        if (!target) return;
-        target.openid = openid;
-        userName = target.name;
-        nextState.actions = addAction(nextState, userName, "绑定微信登录", target.displayName || target.name);
-        this.persist(nextState, "微信已绑定");
-        this.loginAsPerson(userName, openid, nextState);
-      }
-    });
-  },
-
   loginAsPerson(userName, openid, state = this.data.state, login = {}) {
-    if (!ALLOWED_LOGIN_USERS.some((item) => item.name === userName)) {
-      wx.showToast({ title: "未授权登录", icon: "none" });
+    if (!ALLOWED_LOGIN_NAMES.includes(userName)) {
+      wx.showToast({ title: "联系管理员获得授权", icon: "none" });
       return;
     }
     const app = getApp();
@@ -441,10 +336,7 @@ Page({
       isLoggedIn: true,
       loginSummary: `${person?.displayName || userName}已登录`,
       loginAvatar: person?.image || this.avatarForUser(userName),
-      displayNameInput: person?.displayName || userName,
-      selectedLoginName: userName,
-      loginChoices: this.loginChoicesForState(state, userName),
-      wechatInfoText: `openid: ${openid}${login.unionid ? ` · unionid: ${login.unionid}` : ""}`
+      displayNameInput: person?.displayName || userName
     });
     wx.showToast({ title: "微信登录成功", icon: "none" });
   },
@@ -460,8 +352,7 @@ Page({
       isLoggedIn: false,
       loginSummary: "微信登录",
       loginAvatar: "../../assets/shanshanyu.png",
-      displayNameInput: "",
-      wechatInfoText: "小程序只能读取 openid，不能读取真实微信号。"
+      displayNameInput: ""
     });
     wx.showToast({ title: "已退出", icon: "none" });
   },
