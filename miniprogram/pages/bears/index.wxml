@@ -48,9 +48,12 @@
     <button class="reminder-button" bindtap="handleDraw">手动抽小熊</button>
   </view>
 
-  <view class="recent-draw soft-card">
-    <view class="recent-title">今天 / 昨天小熊</view>
-    <view class="recent-day" wx:for="{{recentDrawDays}}" wx:for-item="day" wx:key="key">
+  <view class="recent-draw">
+    <view class="recent-title-row">
+      <text class="recent-title">今天 / 昨天小熊</text>
+      <text class="recent-note">过 0 点也能看昨天</text>
+    </view>
+    <view class="recent-day soft-card {{index === 0 ? 'today' : 'yesterday'}}" wx:for="{{recentDrawDays}}" wx:for-item="day" wx:key="key">
       <view class="recent-day-head">
         <text>{{day.label}}</text>
         <text>{{day.dateText}}</text>
@@ -61,12 +64,13 @@
             <image src="{{person.image}}" mode="aspectFit" />
             <text>{{person.displayName}}</text>
           </view>
-          <view class="recent-bears">
-            <view class="recent-bear" wx:for="{{person.bears}}" wx:for-item="bear" wx:key="name">
+          <view class="recent-bears" wx:if="{{person.bears.length}}">
+            <view class="recent-bear-pill" wx:for="{{person.bears}}" wx:for-item="bear" wx:key="name">
               <image src="{{bear.image}}" mode="aspectFit" />
               <text>{{bear.name}}</text>
             </view>
           </view>
+          <text wx:else class="empty muted">未分配</text>
         </view>
       </view>
       <view wx:else class="empty muted">没有保存小熊结果</view>

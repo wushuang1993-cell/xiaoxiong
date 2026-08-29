@@ -25,6 +25,59 @@
   display: block;
 }
 
+.login-choice-grid {
+  display: grid;
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.login-choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  min-height: 92rpx;
+  padding: 18rpx;
+  border-radius: 24rpx;
+  background: #fffaf1;
+  color: #5b4942;
+  font-size: 28rpx;
+}
+
+.login-choice.active {
+  background: #ffe6b9;
+  box-shadow: inset 0 0 0 2rpx rgba(223, 160, 68, 0.32);
+}
+
+.login-choice image {
+  width: 60rpx;
+  height: 60rpx;
+  flex: 0 0 60rpx;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.9), transparent 38%),
+    linear-gradient(135deg, #fff7e5 0%, #eaf6ef 100%);
+}
+
+.bound-mark {
+  margin-left: auto;
+  padding: 7rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.72);
+  color: #8a6130;
+  font-size: 23rpx;
+  line-height: 1;
+}
+
+.wechat-info {
+  display: block;
+  margin-top: 10rpx;
+  color: #b09f92;
+  font-size: 22rpx;
+  line-height: 1.35;
+  word-break: break-all;
+}
+
 .login-input-row {
   display: flex;
   align-items: center;

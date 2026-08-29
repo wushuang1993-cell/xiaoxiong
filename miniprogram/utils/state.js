@@ -1,7 +1,7 @@
 const DEFAULT_STATE = {
   people: [
-    { name: "闪闪鱼", displayName: "闪闪鱼", openid: "", coins: 0, redrawChances: 0, exchangeChances: 0, wishBear: "史迪奇", image: "../../assets/shanshanyu.png" },
-    { name: "杰尼龟", displayName: "杰尼龟", openid: "", coins: 0, redrawChances: 0, exchangeChances: 0, wishBear: "卢卡斯", image: "../../assets/jienigui.png" }
+    { name: "闪闪鱼", displayName: "闪闪鱼", wechatId: "shuang_wu83", openid: "", coins: 0, redrawChances: 0, exchangeChances: 0, wishBear: "史迪奇", image: "../../assets/shanshanyu.png" },
+    { name: "杰尼龟", displayName: "杰尼龟", wechatId: "Alan0Xu", openid: "", coins: 0, redrawChances: 0, exchangeChances: 0, wishBear: "卢卡斯", image: "../../assets/jienigui.png" }
   ],
   bears: [
     { name: "史迪奇", image: "../../assets/stitch.png", active: true },
@@ -61,6 +61,8 @@ const PERSON_IMAGE_BY_NAME = {
   闪闪鱼: "../../assets/shanshanyu.png",
   杰尼龟: "../../assets/jienigui.png"
 };
+
+const ALLOWED_PERSON_NAMES = DEFAULT_STATE.people.map((person) => person.name);
 
 function pad2(value) {
   return String(value).padStart(2, "0");
@@ -315,7 +317,11 @@ function normalizeDrawHistory(history = {}, bears = []) {
 
 function normalizeState(state = DEFAULT_STATE) {
   const todayId = formatDateKey();
-  const remotePeople = Array.isArray(state.people) && state.people.length ? state.people : DEFAULT_STATE.people;
+  const remotePeople = Array.isArray(state.people) && state.people.length ? state.people : [];
+  const remotePeopleByName = remotePeople.reduce((result, person) => {
+    if (ALLOWED_PERSON_NAMES.includes(person.name)) result[person.name] = person;
+    return result;
+  }, {});
   const remoteBears = sanitizeBears(Array.isArray(state.bears) && state.bears.length ? state.bears : DEFAULT_STATE.bears);
   const isTodayState = !state.todayId || state.todayId === todayId;
   const mergedBears = [
@@ -334,13 +340,20 @@ function normalizeState(state = DEFAULT_STATE) {
   const logs = normalizeLogs(state.logs || {});
   const sportsLogs = normalizeSportsLogs(state.sportsLogs || {});
   const wechatSteps = normalizeWechatSteps(state.wechatSteps || {});
-  const people = remotePeople.map((person) => ({
-    ...person,
-    displayName: person.displayName || person.name,
-    openid: person.openid || "",
-    wishBear: REMOVED_BEAR_NAMES.includes(person.wishBear) || !bears.some((bear) => bear.name === person.wishBear) ? fallbackBear : person.wishBear,
-    image: normalizeAssetPath(person.image || PERSON_IMAGE_BY_NAME[person.name])
-  }));
+  const people = DEFAULT_STATE.people.map((defaultPerson) => {
+    const person = {
+      ...defaultPerson,
+      ...(remotePeopleByName[defaultPerson.name] || {})
+    };
+    return {
+      ...person,
+      displayName: person.displayName || person.name,
+      wechatId: person.wechatId || DEFAULT_STATE.people.find((item) => item.name === person.name)?.wechatId || "",
+      openid: person.openid || "",
+      wishBear: REMOVED_BEAR_NAMES.includes(person.wishBear) || !bears.some((bear) => bear.name === person.wishBear) ? fallbackBear : person.wishBear,
+      image: normalizeAssetPath(person.image || PERSON_IMAGE_BY_NAME[person.name])
+    };
+  });
   const rules = normalizeRules(state.rules || DEFAULT_STATE.rules);
   const draw = isTodayState ? sanitizeDraw(state.draw, bears) : null;
   const drawHistory = normalizeDrawHistory(state.drawHistory || {}, bears);

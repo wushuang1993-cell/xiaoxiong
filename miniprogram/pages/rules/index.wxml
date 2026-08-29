@@ -7,8 +7,19 @@
   <view class="soft-card section">
     <view wx:if="{{!isLoggedIn}}" class="login-form">
       <text class="section-title">微信登录</text>
+      <view class="login-choice-grid">
+        <view class="login-choice {{item.isSelected ? 'active' : ''}}" wx:for="{{loginChoices}}" wx:key="name" data-name="{{item.name}}" bindtap="selectLoginIdentity">
+          <image src="{{item.image}}" mode="aspectFit" />
+          <view>
+            <text>{{item.displayName}}</text>
+            <text class="section-note">{{item.wechatId}}</text>
+          </view>
+          <text wx:if="{{item.bound}}" class="bound-mark">已绑定</text>
+        </view>
+      </view>
       <button class="login-button wechat-login" bindtap="submitWechatLogin">微信一键登录</button>
-      <text class="section-note">首次登录会绑定到一个小熊成员，之后自动识别。</text>
+      <text class="section-note">只允许闪闪鱼和杰尼龟登录；首次会绑定当前微信的 openid，之后自动识别。</text>
+      <text class="wechat-info">{{wechatInfoText}}</text>
     </view>
 
     <view wx:else class="login-panel logged-in">
@@ -21,6 +32,7 @@
           <text class="login-badge">已登录</text>
         </view>
         <text class="section-note">点击头像或名称可修改</text>
+        <text class="wechat-info">{{wechatInfoText}}</text>
       </view>
       <button class="switch-account" bindtap="logout">切换账号</button>
     </view>

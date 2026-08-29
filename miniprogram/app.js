@@ -1,3 +1,5 @@
+const ALLOWED_USERS = ["闪闪鱼", "杰尼龟"];
+
 App({
   globalData: {
     currentUser: "闪闪鱼",
@@ -13,9 +15,11 @@ App({
     }
 
     const login = wx.getStorageSync("bearAppLogin");
-    if (login?.userName) {
+    if (login?.userName && ALLOWED_USERS.includes(login.userName)) {
       this.globalData.currentUser = login.userName;
       this.globalData.currentOpenid = login.openid || "";
+    } else if (login?.userName) {
+      wx.removeStorageSync("bearAppLogin");
     }
   },
 

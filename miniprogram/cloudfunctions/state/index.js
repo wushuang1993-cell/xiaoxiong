@@ -8,6 +8,11 @@ const db = cloud.database();
 const STATE_COLLECTION = "app_states";
 const STATE_DOC_ID = "main";
 const REMOVED_BEAR_NAMES = [];
+const ALLOWED_PERSON_META = {
+  闪闪鱼: { wechatId: "shuang_wu83" },
+  杰尼龟: { wechatId: "Alan0Xu" }
+};
+const ALLOWED_PERSON_NAMES = Object.keys(ALLOWED_PERSON_META);
 
 function cleanForCloud(value) {
   if (Array.isArray(value)) {
@@ -72,6 +77,15 @@ function actionKey(action) {
 
 function sanitizeBears(bears = []) {
   return (bears || []).filter((bear) => bear?.name && !REMOVED_BEAR_NAMES.includes(bear.name));
+}
+
+function sanitizePeople(people = []) {
+  return (people || [])
+    .filter((person) => ALLOWED_PERSON_NAMES.includes(person.name))
+    .map((person) => ({
+      ...person,
+      wechatId: person.wechatId || ALLOWED_PERSON_META[person.name]?.wechatId || ""
+    }));
 }
 
 function mergeDrawHistory(localHistory = {}, remoteHistory = {}) {
@@ -153,7 +167,7 @@ function mergeState(localPayload, remotePayload, options = {}) {
     pendingRedraw: null,
     pendingExchange: null,
     pendingAuction: null,
-    people: mergeItems(remotePayload.people || [], localPayload.people || [], (person) => person.name),
+    people: sanitizePeople(mergeItems(remotePayload.people || [], localPayload.people || [], (person) => person.name)),
     bears: mergeBears(localPayload.bears || [], remotePayload.bears || [], options),
     rules: mergeRules(localPayload.rules || {}, remotePayload.rules || {}, options),
     sportRules: mergeSportRules(localPayload.sportRules || [], remotePayload.sportRules || [], options),
