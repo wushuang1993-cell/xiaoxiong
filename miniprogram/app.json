@@ -31,7 +31,7 @@
       },
       {
         "pagePath": "pages/calendar/index",
-        "text": "日历",
+        "text": "家务",
         "iconPath": "assets/tab-calendar.png",
         "selectedIconPath": "assets/tab-calendar-active.png"
       },

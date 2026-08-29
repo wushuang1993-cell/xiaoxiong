@@ -5,6 +5,7 @@ const DEFAULT_STATE = {
   ],
   bears: [
     { name: "史迪奇", image: "../../assets/stitch.png", active: true },
+    { name: "拖拉机", image: "../../assets/tractor.png", active: true },
     { name: "芭芭拉", image: "../../assets/barbara.png", active: true },
     { name: "卢卡斯", image: "../../assets/lucas.png", active: true },
     { name: "马里奥", image: "../../assets/mario.png", active: true },
@@ -46,13 +47,14 @@ const DEFAULT_STATE = {
 
 const BEAR_IMAGE_BY_NAME = {
   史迪奇: "../../assets/stitch.png",
+  拖拉机: "../../assets/tractor.png",
   芭芭拉: "../../assets/barbara.png",
   卢卡斯: "../../assets/lucas.png",
   马里奥: "../../assets/mario.png",
   爱丽丝: "../../assets/alice.png"
 };
 
-const REMOVED_BEAR_NAMES = ["拖拉机"];
+const REMOVED_BEAR_NAMES = [];
 const SHANSHANYU_WISH_HIT_RATE = 0.7;
 
 const PERSON_IMAGE_BY_NAME = {

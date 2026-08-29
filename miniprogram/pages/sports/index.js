@@ -1,25 +1,28 @@
 const { DEFAULT_STATE, addAction, formatDateKey, loadState, normalizeState, saveState } = require("../../utils/state");
 
-function scoreFor(sport, duration) {
-  return Math.max(0, Math.round(Number(duration || 0) * Number(sport?.rate || 1)));
+const SPORT_TYPES = ["跑步", "快走", "骑行", "游泳", "力量", "球类", "瑜伽"];
+
+function dateKeyFor(year, month, day) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 Page({
   data: {
     dateText: "",
-    state: DEFAULT_STATE,
     selectedPerson: "",
-    sportTypes: DEFAULT_STATE.sportRules,
-    sportTypeIndex: 0,
-    selectedSportLabel: DEFAULT_STATE.sportRules[0].label,
-    duration: "30",
+    selectedDay: new Date().getDate(),
+    calendarYear: new Date().getFullYear(),
+    calendarMonth: new Date().getMonth(),
+    calendarMonthText: "",
+    touchStartX: 0,
+    weekDays: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+    calendarDays: [],
+    state: DEFAULT_STATE,
+    sportTypes: SPORT_TYPES,
     todayLogs: [],
-    sportRanking: [],
-    stepRanking: [],
+    selectedDateTitle: "",
     stepsInput: "",
-    sportsEditing: false,
-    newSportName: "",
-    newSportRate: "1"
+    stepRows: []
   },
 
   onShow() {
@@ -29,14 +32,14 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: "小熊运动排行",
+      title: "小熊运动日历",
       path: "/pages/sports/index"
     };
   },
 
   onShareTimeline() {
     return {
-      title: "小熊运动排行"
+      title: "小熊运动日历"
     };
   },
 
@@ -57,21 +60,88 @@ Page({
   renderState(state) {
     const safeState = normalizeState(state);
     const selectedPerson = this.data.selectedPerson || safeState.people[0]?.name || "";
-    const sportTypes = safeState.sportRules || DEFAULT_STATE.sportRules;
-    const sportTypeIndex = Math.min(this.data.sportTypeIndex, Math.max(0, sportTypes.length - 1));
+    const selectedDay = this.data.selectedDay || new Date().getDate();
+    const calendarYear = this.data.calendarYear;
+    const calendarMonth = this.data.calendarMonth;
+    const selectedDateKey = dateKeyFor(calendarYear, calendarMonth, selectedDay);
+    const logs = this.logsForDay(safeState, selectedDay, calendarYear, calendarMonth);
     this.setData({
       dateText: this.formatDate(),
-      state: safeState,
       selectedPerson,
-      sportTypes,
-      sportTypeIndex,
-      selectedSportLabel: sportTypes[sportTypeIndex]?.label || "运动",
-      todayLogs: this.logsForToday(safeState).map((log) => ({
+      selectedDay,
+      calendarYear,
+      calendarMonth,
+      calendarMonthText: `${calendarYear}年${calendarMonth + 1}月`,
+      calendarDays: this.buildCalendarDays(safeState, selectedDay, calendarYear, calendarMonth),
+      state: safeState,
+      todayLogs: logs.map((log) => ({
         ...log,
         displayPerson: safeState.people.find((person) => person.name === log.person)?.displayName || log.person
       })),
-      sportRanking: this.buildSportRanking(safeState),
-      stepRanking: this.buildStepRanking(safeState)
+      selectedDateTitle: `${calendarMonth + 1}月${selectedDay}日运动`,
+      stepRows: this.stepRowsForDay(safeState, selectedDateKey)
+    });
+  },
+
+  buildCalendarDays(state, selectedDay, year, month) {
+    const firstDay = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const now = new Date();
+    const isCurrentMonth = now.getFullYear() === year && now.getMonth() === month;
+    const days = [];
+
+    for (let index = 0; index < firstDay; index += 1) {
+      days.push({ key: `empty-${index}`, day: 0, isEmpty: true });
+    }
+
+    for (let day = 1; day <= totalDays; day += 1) {
+      const dateKey = dateKeyFor(year, month, day);
+      days.push({
+        key: `day-${day}`,
+        day,
+        isToday: isCurrentMonth && day === now.getDate(),
+        isSelected: day === selectedDay,
+        hasLogs: this.logsForDay(state, day, year, month).length > 0,
+        hasSteps: this.stepsForDate(state, dateKey).length > 0
+      });
+    }
+
+    return days;
+  },
+
+  logsForDay(state, selectedDay, year, month) {
+    const dateKey = dateKeyFor(year, month, selectedDay);
+    return Object.keys(state.sportsLogs || {}).reduce((items, day) => {
+      (state.sportsLogs[day] || []).forEach((log) => {
+        if (log.date === dateKey) items.push(log);
+      });
+      return items;
+    }, []);
+  },
+
+  stepsForDate(state, dateKey) {
+    return Object.keys(state.wechatSteps || {}).reduce((items, day) => {
+      (state.wechatSteps[day] || []).forEach((item) => {
+        if (item.date === dateKey) items.push(item);
+      });
+      return items;
+    }, []);
+  },
+
+  stepRowsForDay(state, dateKey) {
+    const rows = this.stepsForDate(state, dateKey);
+    const maxSteps = Math.max(0, ...rows.map((item) => Number(item.steps || 0)));
+    const winnerCount = rows.filter((item) => Number(item.steps || 0) === maxSteps && maxSteps > 0).length;
+    return (state.people || []).map((person) => {
+      const item = rows.find((row) => row.person === person.name || row.openid === person.openid);
+      const steps = Number(item?.steps || 0);
+      return {
+        name: person.name,
+        displayName: person.displayName || person.name,
+        image: person.image,
+        steps,
+        isWinner: steps > 0 && steps === maxSteps && winnerCount === 1
+      };
     });
   },
 
@@ -81,108 +151,53 @@ Page({
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 | ${week}`;
   },
 
-  logsForToday(state) {
-    const todayId = formatDateKey();
-    return Object.values(state.sportsLogs || {}).flat().filter((log) => log.date === todayId);
-  },
-
-  buildSportRanking(state) {
-    const logs = this.logsForToday(state);
-    return (state.people || [])
-      .map((person) => {
-        const personLogs = logs.filter((log) => log.person === person.name);
-        return {
-          name: person.name,
-          displayName: person.displayName || person.name,
-          image: person.image,
-          count: personLogs.length,
-          duration: personLogs.reduce((sum, log) => sum + Number(log.duration || 0), 0),
-          score: personLogs.reduce((sum, log) => sum + Number(log.score || 0), 0)
-        };
-      })
-      .sort((a, b) => b.score - a.score || b.count - a.count);
-  },
-
-  buildStepRanking(state) {
-    const todayId = formatDateKey();
-    const steps = Object.values(state.wechatSteps || {}).flat().filter((item) => item.date === todayId);
-    return (state.people || [])
-      .map((person) => {
-        const row = steps.find((item) => item.person === person.name || item.openid === person.openid);
-        return {
-          name: person.name,
-          displayName: person.displayName || person.name,
-          image: person.image,
-          steps: Number(row?.steps || 0)
-        };
-      })
-      .sort((a, b) => b.steps - a.steps);
-  },
-
   selectPerson(event) {
     this.setData({ selectedPerson: event.currentTarget.dataset.name });
   },
 
-  onSportTypeChange(event) {
-    const index = Number(event.detail.value || 0);
-    this.setData({ sportTypeIndex: index, selectedSportLabel: this.data.sportTypes[index].label });
+  selectDay(event) {
+    const selectedDay = Number(event.currentTarget.dataset.day || 0);
+    if (!selectedDay) return;
+    this.setData({ selectedDay });
+    this.renderState(this.data.state);
   },
 
-  onDurationInput(event) {
-    this.setData({ duration: String(event.detail.value || "").replace(/[^\d]/g, "").slice(0, 3) });
+  shiftMonth(offset) {
+    const nextDate = new Date(this.data.calendarYear, this.data.calendarMonth + offset, 1);
+    const today = new Date();
+    const isCurrentMonth = nextDate.getFullYear() === today.getFullYear() && nextDate.getMonth() === today.getMonth();
+    this.setData({
+      calendarYear: nextDate.getFullYear(),
+      calendarMonth: nextDate.getMonth(),
+      selectedDay: isCurrentMonth ? today.getDate() : 1
+    });
+    this.renderState(this.data.state);
   },
 
-  onStepsInput(event) {
-    this.setData({ stepsInput: String(event.detail.value || "").replace(/[^\d]/g, "").slice(0, 6) });
+  prevMonth() {
+    this.shiftMonth(-1);
   },
 
-  toggleSportsEditing() {
-    this.setData({ sportsEditing: !this.data.sportsEditing });
+  nextMonth() {
+    this.shiftMonth(1);
   },
 
-  onNewSportNameInput(event) {
-    this.setData({ newSportName: String(event.detail.value || "").slice(0, 8) });
+  onCalendarTouchStart(event) {
+    this.setData({ touchStartX: event.touches?.[0]?.clientX || 0 });
   },
 
-  onNewSportRateInput(event) {
-    this.setData({ newSportRate: String(event.detail.value || "").replace(/[^\d.]/g, "").slice(0, 4) });
-  },
-
-  async addSportRule() {
-    const label = String(this.data.newSportName || "").trim();
-    const rate = Number(this.data.newSportRate || 1);
-    if (!label || !rate) {
-      wx.showToast({ title: "填写运动名称和系数", icon: "none" });
-      return;
-    }
-    const state = normalizeState(this.data.state);
-    if ((state.sportRules || []).some((rule) => rule.label === label)) {
-      wx.showToast({ title: "运动已存在", icon: "none" });
-      return;
-    }
-    state.sportRules = [...(state.sportRules || []), { key: `sport-${Date.now()}`, label, rate }];
-    state.actions = addAction(state, this.data.selectedPerson || "未登录", "新增运动项目", label);
-    this.setData({ newSportName: "", newSportRate: "1" });
-    await this.saveSportsState(state, "已新增运动");
-  },
-
-  async deleteSportRule(event) {
-    const key = event.currentTarget.dataset.key;
-    const label = event.currentTarget.dataset.label;
-    const state = normalizeState(this.data.state);
-    if ((state.sportRules || []).length <= 1) {
-      wx.showToast({ title: "至少保留 1 项运动", icon: "none" });
-      return;
-    }
-    state.sportRules = (state.sportRules || []).filter((rule) => (rule.key || rule.label) !== key);
-    state.actions = addAction(state, this.data.selectedPerson || "未登录", "删除运动项目", label);
-    await this.saveSportsState(state, "已删除运动", { deletedSportRules: [key] });
+  onCalendarTouchEnd(event) {
+    const endX = event.changedTouches?.[0]?.clientX || 0;
+    const diff = endX - this.data.touchStartX;
+    if (Math.abs(diff) < 48) return;
+    this.shiftMonth(diff > 0 ? -1 : 1);
   },
 
   async saveSportsState(state, message, mergeOptions = {}) {
     try {
-      await saveState(state, mergeOptions);
-      this.renderState(state);
+      const nextState = normalizeState(state);
+      await saveState(nextState, mergeOptions);
+      this.renderState(nextState);
       wx.showToast({ title: message, icon: "none" });
     } catch (error) {
       console.warn("[小熊运动保存失败]", error);
@@ -190,17 +205,32 @@ Page({
     }
   },
 
-  async addSportLog() {
+  addRedrawChanceLog(state, personName, detail, id) {
+    const now = new Date();
+    const day = now.getDate();
+    state.logs = state.logs || {};
+    state.logs[day] = state.logs[day] || [];
+    if (id && state.logs[day].some((log) => log.id === id)) return false;
+    state.logs[day].push({
+      id: id || `sport-chance-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      person: personName,
+      type: "运动",
+      detail,
+      delta: 1,
+      creditType: "redraw",
+      date: formatDateKey(now),
+      earnedDay: day,
+      createdAt: now.toISOString()
+    });
+    return true;
+  },
+
+  async addSportLog(event) {
     if (!this.data.selectedPerson) {
-      wx.showToast({ title: "先选择成员", icon: "none" });
+      wx.showToast({ title: "请先选择人物", icon: "none" });
       return;
     }
-    const sport = this.data.sportTypes[this.data.sportTypeIndex] || this.data.sportTypes[0];
-    const duration = Number(this.data.duration || 0);
-    if (duration <= 0) {
-      wx.showToast({ title: "填写运动时长", icon: "none" });
-      return;
-    }
+    const label = event.currentTarget.dataset.label;
     const now = new Date();
     const day = now.getDate();
     const state = normalizeState(this.data.state);
@@ -209,43 +239,70 @@ Page({
     state.sportsLogs[day].push({
       id: `sport-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       person: this.data.selectedPerson,
-      type: sport.label,
-      typeKey: sport.key,
-      duration,
-      score: scoreFor(sport, duration),
+      type: label,
+      detail: label,
       date: formatDateKey(now),
       earnedDay: day,
       createdAt: now.toISOString()
     });
-    state.actions = addAction(state, this.data.selectedPerson, "记录运动", sport.label);
+    this.addRedrawChanceLog(state, this.data.selectedPerson, label);
+    state.actions = addAction(state, this.data.selectedPerson, "记录运动", `${label}，+1 申请重抽`);
     await this.saveSportsState(state, "已记录运动");
+  },
+
+  onStepsInput(event) {
+    this.setData({ stepsInput: String(event.detail.value || "").replace(/[^\d]/g, "").slice(0, 6) });
+  },
+
+  awardStepWinnerIfReady(state, dateKey) {
+    const people = state.people || [];
+    const rows = this.stepRowsForDay(state, dateKey);
+    const rewardPrefix = `steps-winner-${dateKey}-`;
+    state.logs = Object.keys(state.logs || {}).reduce((nextLogs, day) => {
+      nextLogs[day] = (state.logs[day] || []).filter((log) => !String(log.id || "").startsWith(rewardPrefix));
+      return nextLogs;
+    }, {});
+    state.actions = (state.actions || []).filter((action) => !String(action.id || "").startsWith(`action-${rewardPrefix}`));
+    const allRecorded = people.length > 0 && rows.every((row) => Number(row.steps || 0) > 0);
+    if (!allRecorded) return;
+    const winners = rows.filter((row) => row.isWinner);
+    if (winners.length !== 1) return;
+    const winner = winners[0];
+    const id = `steps-winner-${dateKey}-${winner.name}`;
+    const added = this.addRedrawChanceLog(state, winner.name, "步数胜者", id);
+    if (added) {
+      state.actions = addAction(state, winner.name, "步数胜者", "+1 申请重抽", `action-${id}`);
+    }
   },
 
   async saveManualSteps() {
     if (!this.data.selectedPerson) {
-      wx.showToast({ title: "先选择成员", icon: "none" });
+      wx.showToast({ title: "请先选择人物", icon: "none" });
       return;
     }
     const steps = Number(this.data.stepsInput || 0);
     if (steps <= 0) {
-      wx.showToast({ title: "填写微信步数", icon: "none" });
+      wx.showToast({ title: "填写步数", icon: "none" });
       return;
     }
     const now = new Date();
     const day = now.getDate();
+    const dateKey = formatDateKey(now);
     const state = normalizeState(this.data.state);
     const person = state.people.find((item) => item.name === this.data.selectedPerson);
     state.wechatSteps = state.wechatSteps || {};
     state.wechatSteps[day] = (state.wechatSteps[day] || []).filter((item) => item.person !== this.data.selectedPerson);
     state.wechatSteps[day].push({
-      id: `steps-${formatDateKey(now)}-${this.data.selectedPerson}`,
+      id: `steps-${dateKey}-${this.data.selectedPerson}`,
       person: this.data.selectedPerson,
       openid: person?.openid || "",
       steps,
-      date: formatDateKey(now),
+      date: dateKey,
       createdAt: now.toISOString()
     });
-    state.actions = addAction(state, this.data.selectedPerson, "更新微信步数", `${steps}`);
+    state.actions = addAction(state, this.data.selectedPerson, "更新步数", `${steps}`);
+    this.awardStepWinnerIfReady(state, dateKey);
+    this.setData({ stepsInput: "" });
     await this.saveSportsState(state, "步数已更新");
   },
 
@@ -253,22 +310,20 @@ Page({
     if (!wx.getWeRunData) {
       wx.showModal({
         title: "暂不支持",
-        content: "当前微信版本不支持读取微信步数。",
+        content: "当前微信版本不支持读取微信步数，可以先手动记录。",
         showCancel: false
       });
       return;
     }
-    wx.showModal({
-      title: "微信步数接入说明",
-      content: "微信步数需要用户授权，并通过云函数解密后才能写入运动排行。本版先保留入口，可先手动填写步数。",
-      confirmText: "去授权",
-      success: (result) => {
-        if (!result.confirm) return;
-        wx.getWeRunData({
-          success: () => wx.showToast({ title: "已获得授权，待云端解密接入", icon: "none" }),
-          fail: () => wx.showToast({ title: "未授权微信步数", icon: "none" })
+    wx.getWeRunData({
+      success: () => {
+        wx.showModal({
+          title: "已授权微信步数",
+          content: "微信返回的是加密步数，后续接入云端解密后会自动写入。现在可以先手动记录。",
+          showCancel: false
         });
-      }
+      },
+      fail: () => wx.showToast({ title: "未授权微信步数", icon: "none" })
     });
   }
 });

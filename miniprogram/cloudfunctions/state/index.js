@@ -7,7 +7,7 @@ cloud.init({
 const db = cloud.database();
 const STATE_COLLECTION = "app_states";
 const STATE_DOC_ID = "main";
-const REMOVED_BEAR_NAMES = ["拖拉机"];
+const REMOVED_BEAR_NAMES = [];
 
 function cleanForCloud(value) {
   if (Array.isArray(value)) {

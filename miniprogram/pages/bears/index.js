@@ -141,14 +141,14 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: "今晚小熊抽签和运动排行",
+      title: "今晚小熊抽签和运动日历",
       path: "/pages/bears/index"
     };
   },
 
   onShareTimeline() {
     return {
-      title: "今晚小熊抽签和运动排行"
+      title: "今晚小熊抽签和运动日历"
     };
   },
 

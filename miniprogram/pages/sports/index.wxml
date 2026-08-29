@@ -1,42 +1,30 @@
 <view class="screen sports-screen">
   <view class="head">
     <text class="muted">{{dateText}}</text>
-    <view class="title">小熊运动</view>
+    <view class="title">运动日历</view>
   </view>
 
-  <view class="soft-card hero-sport">
-    <view>
-      <text class="section-title">今日排行</text>
-      <text class="section-note">微信步数和手动运动分开统计</text>
+  <view class="soft-card calendar-card" bindtouchstart="onCalendarTouchStart" bindtouchend="onCalendarTouchEnd">
+    <view class="calendar-top">
+      <view class="month-button" bindtap="prevMonth">‹</view>
+      <view class="month-title">{{calendarMonthText}}</view>
+      <view class="month-button" bindtap="nextMonth">›</view>
     </view>
-    <button class="small-button" bindtap="syncWechatSteps">微信步数</button>
-  </view>
-
-  <view class="rank-title">微信步数排行</view>
-  <view class="ranking-list">
-    <view class="rank-card soft-card" wx:for="{{stepRanking}}" wx:key="name">
-      <view class="rank-left">
-        <image src="{{item.image}}" mode="aspectFit" />
-        <view>
-          <text class="rank-name">{{item.displayName}}</text>
-          <text class="muted">今日微信运动</text>
-        </view>
-      </view>
-      <view class="rank-score steps">{{item.steps}}</view>
+    <view class="week-row">
+      <text wx:for="{{weekDays}}" wx:key="*this">{{item}}</text>
     </view>
-  </view>
-
-  <view class="rank-title">运动排行</view>
-  <view class="ranking-list">
-    <view class="rank-card soft-card" wx:for="{{sportRanking}}" wx:key="name">
-      <view class="rank-left">
-        <image src="{{item.image}}" mode="aspectFit" />
-        <view>
-          <text class="rank-name">{{item.displayName}}</text>
-          <text class="muted">{{item.count}} 次 · {{item.duration}} 分钟</text>
-        </view>
+    <view class="month-grid">
+      <view
+        class="day-cell {{item.isEmpty ? 'empty-day' : ''}} {{item.isToday ? 'today' : ''}} {{item.isSelected ? 'selected' : ''}}"
+        wx:for="{{calendarDays}}"
+        wx:key="key"
+        data-day="{{item.day}}"
+        bindtap="selectDay"
+      >
+        <text wx:if="{{!item.isEmpty}}">{{item.day}}</text>
+        <view wx:if="{{item.hasLogs}}" class="record-dot"></view>
+        <view wx:if="{{item.hasSteps}}" class="steps-dot"></view>
       </view>
-      <view class="rank-score">{{item.score}}</view>
     </view>
   </view>
 
@@ -44,46 +32,46 @@
     <view class="section-top">
       <view>
         <text class="section-title">记录运动</text>
-        <text class="section-note">手动选择健身、打球等运动</text>
+        <text class="section-note">每记录一次运动，增加 1 次申请重抽。</text>
       </view>
-      <button class="small-button" bindtap="toggleSportsEditing">{{sportsEditing ? '完成' : '编辑'}}</button>
+      <button class="small-button" bindtap="syncWechatSteps">微信步数</button>
     </view>
     <view class="person-switch">
       <view class="person-pill {{selectedPerson === item.name ? 'active' : ''}}" wx:for="{{state.people}}" wx:key="name" data-name="{{item.name}}" bindtap="selectPerson">
         <image src="{{item.image}}" mode="aspectFit" />
-        <text>{{item.displayName || item.name}}</text>
+        <view class="person-pill-copy">
+          <text>{{item.displayName || item.name}}</text>
+          <text class="muted">重抽 {{item.redrawChances || 0}} · 兑换 {{item.exchangeChances || 0}}</text>
+        </view>
       </view>
     </view>
-    <picker mode="selector" range="{{sportTypes}}" range-key="label" value="{{sportTypeIndex}}" bindchange="onSportTypeChange">
-      <view class="input picker-field">{{selectedSportLabel}}</view>
-    </picker>
-    <input class="input" type="number" placeholder="运动时长，分钟" value="{{duration}}" bindinput="onDurationInput" />
-    <button class="button" bindtap="addSportLog">记录运动</button>
-
-    <view wx:if="{{sportsEditing}}" class="sport-rule-editor">
-      <input class="input" placeholder="新增运动，例如羽毛球" value="{{newSportName}}" bindinput="onNewSportNameInput" />
-      <input class="input" type="digit" placeholder="换算系数，例如 1.1" value="{{newSportRate}}" bindinput="onNewSportRateInput" />
-      <button class="button secondary" bindtap="addSportRule">新增运动项目</button>
-      <view class="sport-rule-line" wx:for="{{sportTypes}}" wx:key="key">
-        <text>{{item.label}} · x{{item.rate}}</text>
-        <view class="delete-link" data-key="{{item.key || item.label}}" data-label="{{item.label}}" bindtap="deleteSportRule">×</view>
-      </view>
+    <view class="tag-grid">
+      <button class="tag" wx:for="{{sportTypes}}" wx:key="*this" data-label="{{item}}" bindtap="addSportLog">{{item}}</button>
     </view>
   </view>
 
   <view class="soft-card section">
-    <text class="section-title">微信步数</text>
-    <text class="section-note">先选择成员，手动补录今日微信运动步数；自动接入需要后续云端解密。</text>
-    <input class="input" type="number" placeholder="今日微信步数" value="{{stepsInput}}" bindinput="onStepsInput" />
-    <button class="button secondary" bindtap="saveManualSteps">更新步数</button>
+    <text class="section-title">今日步数</text>
+    <text class="section-note">两个人都记录后，步数更多的人自动增加 1 次申请重抽。</text>
+    <input class="input" type="number" placeholder="输入今日步数" value="{{stepsInput}}" bindinput="onStepsInput" />
+    <button class="button secondary" bindtap="saveManualSteps">保存步数</button>
+    <view class="steps-list">
+      <view class="step-row {{item.isWinner ? 'winner' : ''}}" wx:for="{{stepRows}}" wx:key="name">
+        <view>
+          <image src="{{item.image}}" mode="aspectFit" />
+          <text>{{item.displayName}}</text>
+        </view>
+        <text>{{item.steps}} 步</text>
+      </view>
+    </view>
   </view>
 
-  <view class="soft-card section">
-    <text class="section-title">今日运动</text>
+  <view class="soft-card section record-card">
+    <text class="section-title">{{selectedDateTitle}}</text>
     <view class="sport-log" wx:for="{{todayLogs}}" wx:key="id">
       <text>{{item.displayPerson || item.person}} · {{item.type}}</text>
-      <text>{{item.score}} 分</text>
+      <text>+1 重抽</text>
     </view>
-    <view wx:if="{{!todayLogs.length}}" class="muted empty">今天还没有运动记录</view>
+    <view wx:if="{{!todayLogs.length}}" class="muted empty">这一天还没有运动记录</view>
   </view>
 </view>

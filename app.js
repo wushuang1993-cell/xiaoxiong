@@ -44,6 +44,7 @@ const state = {
   ],
   bears: [
     { name: "史迪奇", color: "#92cfff", image: "assets/stitch.png", active: true },
+    { name: "拖拉机", color: "#9fd493", image: "assets/tractor.png", active: true },
     { name: "芭芭拉", color: "#ffc2d0", image: "assets/barbara.png", active: true },
     { name: "卢卡斯", color: "#e0a547", image: "assets/lucas.png", active: true },
     { name: "马里奥", color: "#c9935e", image: "assets/mario.png", active: true },
@@ -64,13 +65,12 @@ const state = {
     bonus: [
       { label: "帮对方设计封面图", value: "+1 申请兑换" },
       { label: "帮对方提供工作建议", value: "+1 申请兑换" },
-      { label: "运动", value: "+1 申请兑换" },
     ],
     penalty: [{ label: "未完成基础家务", value: "-1 申请重抽" }],
   },
 };
 
-const REMOVED_BEAR_NAMES = new Set(["拖拉机"]);
+const REMOVED_BEAR_NAMES = new Set();
 const DEFAULT_FALLBACK_BEAR = "史迪奇";
 const SHANSHANYU_WISH_HIT_RATE = 0.7;
 

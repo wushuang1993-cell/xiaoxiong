@@ -13,6 +13,7 @@ Page({
     calendarDays: [],
     state: { people: [], logs: {}, rules: {} },
     todayLogs: [],
+    todaySportsLogs: [],
     quickRules: [],
     selectedDrawPeople: [],
     selectedDateTitle: ""
@@ -80,6 +81,10 @@ Page({
         displayPerson: safeState.people.find((person) => person.name === log.person)?.displayName || log.person,
         deltaText: this.formatDelta(log)
       })),
+      todaySportsLogs: this.sportsLogsForDay(safeState, selectedDay, calendarYear, calendarMonth).map((log) => ({
+        ...log,
+        displayPerson: safeState.people.find((person) => person.name === log.person)?.displayName || log.person
+      })),
       selectedDrawPeople: (safeState.people || []).map((person) => ({
         name: person.name,
         displayName: person.displayName || person.name,
@@ -89,7 +94,7 @@ Page({
           image: safeState.bears.find((bear) => bear.name === bearName)?.image || ""
         }))
       })),
-      selectedDateTitle: `${calendarMonth + 1}月${selectedDay}日记录`,
+      selectedDateTitle: `${calendarMonth + 1}月${selectedDay}日`,
       quickRules
     });
   },
@@ -139,10 +144,31 @@ Page({
     return Object.keys(state.logs || {}).reduce((items, day) => {
       const logs = state.logs[day] || [];
       logs.forEach((log) => {
-        if (log.date === dateKey) items.push(log);
+        if (log.date === dateKey && log.type !== "运动") items.push(log);
       });
       return items;
     }, []);
+  },
+
+  sportsLogsForDay(state, selectedDay, year, month) {
+    const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+    const manualLogs = Object.keys(state.sportsLogs || {}).reduce((items, day) => {
+      const logs = state.sportsLogs[day] || [];
+      logs.forEach((log) => {
+        if (log.date === dateKey) items.push({ ...log, rewardText: "+1 申请重抽" });
+      });
+      return items;
+    }, []);
+    const stepWinnerLogs = Object.keys(state.logs || {}).reduce((items, day) => {
+      const logs = state.logs[day] || [];
+      logs.forEach((log) => {
+        if (log.date === dateKey && log.type === "运动" && log.detail === "步数胜者") {
+          items.push({ ...log, type: "步数胜者", rewardText: "+1 申请重抽" });
+        }
+      });
+      return items;
+    }, []);
+    return [...manualLogs, ...stepWinnerLogs];
   },
 
   formatDate() {
