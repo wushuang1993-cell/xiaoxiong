@@ -272,25 +272,6 @@
   margin-top: 24rpx;
 }
 
-.recent-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18rpx;
-  margin: 0 4rpx 14rpx;
-}
-
-.recent-title {
-  color: #4d3a32;
-  font-size: 30rpx;
-  font-weight: 800;
-}
-
-.recent-note {
-  color: #a3958a;
-  font-size: 23rpx;
-}
-
 .recent-day {
   margin-top: 14rpx;
   padding: 24rpx;

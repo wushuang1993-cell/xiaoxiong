@@ -49,10 +49,6 @@
   </view>
 
   <view class="recent-draw">
-    <view class="recent-title-row">
-      <text class="recent-title">今天 / 昨天小熊</text>
-      <text class="recent-note">过 0 点也能看昨天</text>
-    </view>
     <view class="recent-day soft-card {{index === 0 ? 'today' : 'yesterday'}}" wx:for="{{recentDrawDays}}" wx:for-item="day" wx:key="key">
       <view class="recent-day-head">
         <text>{{day.label}}</text>
