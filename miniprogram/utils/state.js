@@ -21,13 +21,12 @@ const DEFAULT_STATE = {
   sportsLogs: {},
   wechatSteps: {},
   sportRules: [
-    { key: "run", label: "跑步", rate: 1.2 },
-    { key: "walk", label: "快走", rate: 0.8 },
-    { key: "ride", label: "骑行", rate: 0.7 },
-    { key: "swim", label: "游泳", rate: 1.4 },
+    { key: "walk", label: "散步", rate: 1 },
+    { key: "run", label: "跑步", rate: 1 },
+    { key: "badminton", label: "羽毛球", rate: 1 },
+    { key: "tennis", label: "网球", rate: 1 },
     { key: "strength", label: "力量", rate: 1 },
-    { key: "yoga", label: "瑜伽", rate: 0.6 },
-    { key: "ball", label: "球类", rate: 1.1 }
+    { key: "ride", label: "骑行", rate: 1 }
   ],
   rules: {
     base: [
@@ -95,6 +94,7 @@ function normalizeLog(log, fallbackDay) {
   const logDate = parseLogDate(log, fallbackDay);
   const dateKey = formatDateKey(logDate);
   const createdAt = log.createdAt || `${dateKey}T00:00:00.000Z`;
+  const sourceType = log.sourceType || (log.type === "运动" && log.detail === "步数胜者" ? "system" : "manual");
   const stableId = [
     "log",
     dateKey,
@@ -110,6 +110,7 @@ function normalizeLog(log, fallbackDay) {
     id: log.id || stableId,
     date: log.date || dateKey,
     earnedDay: log.earnedDay || logDate.getDate(),
+    sourceType,
     createdAt
   };
 }
@@ -186,6 +187,7 @@ function normalizeSportsLog(log, fallbackDay) {
     duration: Number(log.duration || 0),
     steps: Number(log.steps || 0),
     score: Number(log.score || 0),
+    sourceType: log.sourceType || "manual",
     createdAt
   };
 }
@@ -213,6 +215,7 @@ function normalizeWechatSteps(steps = {}) {
         id: item.id || `steps-${item.date || day}-${item.person || ""}`,
         steps: Number(item.steps || 0),
         date: item.date || item.day || formatDateKey(),
+        sourceType: item.sourceType || "manual",
         createdAt: item.createdAt || new Date().toISOString()
       })),
       (item) => `${item.date || day}|${item.person || item.openid || ""}`
@@ -234,7 +237,11 @@ function actionDedupeKey(action) {
 }
 
 function normalizeActions(actions = []) {
-  return dedupeItems(actions || [], actionDedupeKey, (currentAction) => currentAction).slice(0, 80);
+  const normalizedActions = (actions || []).map((action) => ({
+    ...action,
+    sourceType: action.sourceType || (action.action === "步数胜者" ? "system" : "manual")
+  }));
+  return dedupeItems(normalizedActions, actionDedupeKey, (currentAction) => currentAction).slice(0, 80);
 }
 
 function ruleAmount(rule) {
@@ -261,6 +268,10 @@ function normalizeRules(rules = DEFAULT_STATE.rules) {
     bonus: (nextRules.bonus || []).filter((rule) => rule.label !== "运动").map((rule) => ({ ...rule, value: ruleValue(1, "exchange") })),
     penalty: (nextRules.penalty || []).map((rule) => ({ ...rule, value: ruleValue(-1, "redraw") }))
   };
+}
+
+function normalizeSportRules() {
+  return DEFAULT_STATE.sportRules.map((rule) => ({ ...rule }));
 }
 
 function creditTypeForLog(log) {
@@ -445,7 +456,7 @@ function normalizeState(state = DEFAULT_STATE) {
     drawHistory,
     sportsLogs,
     wechatSteps,
-    sportRules: Array.isArray(state.sportRules) && state.sportRules.length ? state.sportRules : DEFAULT_STATE.sportRules,
+    sportRules: normalizeSportRules(state.sportRules),
     rules
   };
 }
@@ -524,7 +535,8 @@ function addAction(state, person, action, detail = "", id = "") {
     time: now.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
     person: person || "未登录",
     action,
-    detail: detail || ""
+    detail: detail || "",
+    sourceType: action === "步数胜者" ? "system" : "manual"
   };
   const key = actionDedupeKey(nextAction);
   return [nextAction, ...actions.filter((item) => actionDedupeKey(item) !== key)].slice(0, 80);

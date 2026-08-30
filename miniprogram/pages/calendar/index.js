@@ -77,11 +77,13 @@ Page({
       todayLogs: this.logsForDay(safeState, selectedDay, calendarYear, calendarMonth).map((log) => ({
         ...log,
         displayPerson: safeState.people.find((person) => person.name === log.person)?.displayName || log.person,
-        deltaText: this.formatDelta(log)
+        deltaText: this.formatDelta(log),
+        sourceLabel: this.sourceLabel(log)
       })),
       todaySportsLogs: this.sportsLogsForDay(safeState, selectedDay, calendarYear, calendarMonth).map((log) => ({
         ...log,
-        displayPerson: safeState.people.find((person) => person.name === log.person)?.displayName || log.person
+        displayPerson: safeState.people.find((person) => person.name === log.person)?.displayName || log.person,
+        sourceLabel: this.sourceLabel(log)
       })),
       selectedDateTitle: `${calendarMonth + 1}月${selectedDay}日`,
       quickRules
@@ -100,6 +102,10 @@ Page({
     const creditType = log.creditType || (log.type === "增值家务" || log.type === "兑换小熊" ? "exchange" : "redraw");
     const label = creditType === "exchange" ? "申请兑换" : "申请重抽";
     return `${amount > 0 ? "+" : ""}${amount} ${label}`;
+  },
+
+  sourceLabel(item) {
+    return item?.sourceType === "system" ? "系统结算" : "手动记录";
   },
 
   buildCalendarDays(state, selectedDay, year, month) {
@@ -235,6 +241,8 @@ Page({
       creditType,
       date: dateKey,
       earnedDay: day,
+      sourceType: "manual",
+      createdBy: getApp().globalData.currentUser || this.data.selectedPerson,
       createdAt: today.toISOString()
     });
     state.actions = addAction(state, this.data.selectedPerson, "记录家务", label, `action-${id}`);

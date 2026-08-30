@@ -99,7 +99,7 @@
   <view class="audit soft-card">
     <text class="muted">防作弊记录 · 每日记录</text>
     <view class="audit-line" wx:for="{{todayActions}}" wx:key="id">
-      <text>{{item.time}} {{item.person}} {{item.action}} {{item.detail}}</text>
+      <text>{{item.time}} {{item.person}} {{item.action}} {{item.detail}} <text class="source-pill {{item.sourceType === 'system' ? 'system' : ''}}">{{item.sourceLabel}}</text></text>
     </view>
     <view wx:if="{{!todayActions.length}}" class="empty muted">今天还没有操作</view>
   </view>

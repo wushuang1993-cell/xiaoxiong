@@ -1,6 +1,6 @@
 const { DEFAULT_STATE, addAction, formatDateKey, loadState, normalizeState, saveState } = require("../../utils/state");
 
-const SPORT_TYPES = ["跑步", "快走", "骑行", "游泳", "力量", "球类", "瑜伽"];
+const SPORT_TYPES = ["散步", "跑步", "羽毛球", "网球", "力量", "骑行"];
 const STEP_PK_CUTOFF_HOUR = 23;
 const STEP_PK_CUTOFF_TEXT = "23:00";
 
@@ -84,7 +84,8 @@ Page({
       state: safeState,
       todayLogs: logs.map((log) => ({
         ...log,
-        displayPerson: safeState.people.find((person) => person.name === log.person)?.displayName || log.person
+        displayPerson: safeState.people.find((person) => person.name === log.person)?.displayName || log.person,
+        sourceLabel: this.sourceLabel(log)
       })),
       selectedDateTitle: `${calendarMonth + 1}月${selectedDay}日运动`,
       stepRows: this.stepRowsForDay(safeState, selectedDateKey)
@@ -159,6 +160,10 @@ Page({
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 | ${week}`;
   },
 
+  sourceLabel(item) {
+    return item?.sourceType === "system" ? "系统结算" : "手动记录";
+  },
+
   selectPerson(event) {
     this.setData({ selectedPerson: event.currentTarget.dataset.name });
   },
@@ -213,7 +218,7 @@ Page({
     }
   },
 
-  addRedrawChanceLog(state, personName, detail, id, dateKey = formatDateKey()) {
+  addRedrawChanceLog(state, personName, detail, id, dateKey = formatDateKey(), sourceType = "manual") {
     const now = new Date();
     const day = Number(dateKey.slice(-2)) || now.getDate();
     state.logs = state.logs || {};
@@ -228,6 +233,7 @@ Page({
       creditType: "redraw",
       date: dateKey,
       earnedDay: day,
+      sourceType,
       createdAt: now.toISOString()
     });
     return true;
@@ -255,9 +261,11 @@ Page({
       detail: label,
       date: dateKey,
       earnedDay: day,
+      sourceType: "manual",
+      createdBy: getApp().globalData.currentUser || this.data.selectedPerson,
       createdAt: now.toISOString()
     });
-    this.addRedrawChanceLog(state, this.data.selectedPerson, label, chanceId, dateKey);
+    this.addRedrawChanceLog(state, this.data.selectedPerson, label, chanceId, dateKey, "manual");
     state.actions = addAction(state, this.data.selectedPerson, "记录运动", `${label}，+1 申请重抽`, `action-${id}`);
     await this.saveSportsState(state, "已记录运动");
   },
@@ -307,7 +315,7 @@ Page({
     const id = `steps-winner-${dateKey}-${winner.name}`;
     if (existingRewardIds.length === 1 && existingRewardIds[0] === id) return false;
     clearStepWinnerReward();
-    const added = this.addRedrawChanceLog(state, winner.name, "步数胜者", id, dateKey);
+    const added = this.addRedrawChanceLog(state, winner.name, "步数胜者", id, dateKey, "system");
     if (added) {
       state.actions = addAction(state, winner.name, "步数胜者", "+1 申请重抽", `action-${id}`);
     }
@@ -337,6 +345,8 @@ Page({
       openid: person?.openid || "",
       steps,
       date: dateKey,
+      sourceType: "manual",
+      createdBy: getApp().globalData.currentUser || this.data.selectedPerson,
       createdAt: now.toISOString()
     });
     state.actions = addAction(state, this.data.selectedPerson, "更新步数", `${steps}`, `action-steps-${dateKey}-${this.data.selectedPerson}`);

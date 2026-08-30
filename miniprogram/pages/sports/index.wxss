@@ -282,6 +282,23 @@
   font-weight: 800;
 }
 
+.source-pill {
+  display: inline-flex;
+  margin-left: 8rpx;
+  padding: 2rpx 10rpx;
+  border-radius: 999rpx;
+  background: rgba(130, 181, 138, 0.16);
+  color: #6a8f70;
+  font-size: 20rpx;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+.source-pill.system {
+  background: rgba(223, 160, 68, 0.16);
+  color: #a06d28;
+}
+
 .record-card {
   background: #f3ebdc;
   box-shadow: none;

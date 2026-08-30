@@ -70,7 +70,12 @@ Page({
       currentUser,
       isLoggedIn,
       pendingNotice: this.pendingNoticeForUser(safeState, currentUser),
-      todayActions: (safeState.actions || []).filter((action) => action.date === todayId),
+      todayActions: (safeState.actions || [])
+        .filter((action) => action.date === todayId)
+        .map((action) => ({
+          ...action,
+          sourceLabel: this.sourceLabel(action)
+        })),
       drawReminder: this.drawReminderForToday(safeState),
       recentDrawDays: this.recentDrawDays(safeState, bearMap)
     });
@@ -85,6 +90,10 @@ Page({
       title: "23:30 手动抽小熊",
       detail: "今天还没有完成抽小熊，需要现在手动抽签。"
     };
+  },
+
+  sourceLabel(item) {
+    return item?.sourceType === "system" ? "系统结算" : "手动记录";
   },
 
   dateAtOffset(offset) {

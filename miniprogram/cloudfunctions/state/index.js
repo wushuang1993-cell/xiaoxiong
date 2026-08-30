@@ -13,6 +13,14 @@ const ALLOWED_PERSON_META = {
   杰尼龟: { wechatId: "Alan0Xu", openid: "oARbkxXMLbBTgt1PtABedW2BhwFk" }
 };
 const ALLOWED_PERSON_NAMES = Object.keys(ALLOWED_PERSON_META);
+const DEFAULT_SPORT_RULES = [
+  { key: "walk", label: "散步", rate: 1 },
+  { key: "run", label: "跑步", rate: 1 },
+  { key: "badminton", label: "羽毛球", rate: 1 },
+  { key: "tennis", label: "网球", rate: 1 },
+  { key: "strength", label: "力量", rate: 1 },
+  { key: "ride", label: "骑行", rate: 1 }
+];
 
 function cleanForCloud(value) {
   if (Array.isArray(value)) {
@@ -76,11 +84,23 @@ function logKey(log, fallbackDay) {
   ].join("|");
 }
 
+function withLogSource(log) {
+  return {
+    ...log,
+    sourceType: log.sourceType || (log.type === "运动" && log.detail === "步数胜者" ? "system" : "manual")
+  };
+}
+
 function mergeLogs(localLogs = {}, remoteLogs = {}) {
   const days = new Set([...Object.keys(remoteLogs || {}), ...Object.keys(localLogs || {})]);
   const merged = {};
   days.forEach((day) => {
-    merged[day] = mergeItems(remoteLogs[day] || [], localLogs[day] || [], (log) => logKey(log, day), preferLatestItem);
+    merged[day] = mergeItems(
+      (remoteLogs[day] || []).map(withLogSource),
+      (localLogs[day] || []).map(withLogSource),
+      (log) => logKey(log, day),
+      preferLatestItem
+    );
   });
   return merged;
 }
@@ -104,7 +124,10 @@ function actionKey(action) {
 function mergeActions(localActions = [], remoteActions = []) {
   const map = new Map();
   const order = [];
-  [...(localActions || []), ...(remoteActions || [])].forEach((action) => {
+  [...(localActions || []), ...(remoteActions || [])].map((action) => ({
+    ...action,
+    sourceType: action.sourceType || (action.action === "步数胜者" ? "system" : "manual")
+  })).forEach((action) => {
     const key = actionKey(action);
     if (!key || map.has(key)) return;
     map.set(key, clone(action));
@@ -155,8 +178,8 @@ function mergeSportsLogs(localLogs = {}, remoteLogs = {}) {
   const merged = {};
   days.forEach((day) => {
     merged[day] = mergeItems(
-      remoteLogs[day] || [],
-      localLogs[day] || [],
+      (remoteLogs[day] || []).map((log) => ({ ...log, sourceType: log.sourceType || "manual" })),
+      (localLogs[day] || []).map((log) => ({ ...log, sourceType: log.sourceType || "manual" })),
       (log) => {
         if (log.date && log.person && log.type) {
           return [log.date, log.person, log.type, log.detail || "", day || ""].join("|");
@@ -174,8 +197,8 @@ function mergeWechatSteps(localSteps = {}, remoteSteps = {}) {
   const merged = {};
   days.forEach((day) => {
     merged[day] = mergeItems(
-      remoteSteps[day] || [],
-      localSteps[day] || [],
+      (remoteSteps[day] || []).map((item) => ({ ...item, sourceType: item.sourceType || "manual" })),
+      (localSteps[day] || []).map((item) => ({ ...item, sourceType: item.sourceType || "manual" })),
       (item) => `${item.date || day}|${item.person || item.openid || item.id}`,
       (remoteItem, localItem) => ({ ...remoteItem, ...localItem, steps: Number(localItem.steps || remoteItem.steps || 0) })
     );
@@ -195,13 +218,8 @@ function mergeRules(localRules = {}, remoteRules = {}, options = {}) {
   }, {});
 }
 
-function mergeSportRules(localRules = [], remoteRules = [], options = {}) {
-  const deleted = new Set(options.deletedSportRules || []);
-  return mergeItems(
-    remoteRules.filter((rule) => !deleted.has(rule.key || rule.label)),
-    localRules,
-    (rule) => rule.key || rule.label
-  );
+function mergeSportRules() {
+  return DEFAULT_SPORT_RULES.map((rule) => ({ ...rule }));
 }
 
 function mergeBears(localBears = [], remoteBears = [], options = {}) {

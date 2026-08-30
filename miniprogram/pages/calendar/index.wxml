@@ -47,13 +47,13 @@
   <view class="soft-card section record-card">
     <text class="section-title">{{selectedDateTitle}}家务</text>
     <view class="log-line {{item.delta < 0 ? 'minus-log' : ''}}" wx:for="{{todayLogs}}" wx:key="index">
-      <text>{{item.displayPerson || item.person}} · {{item.type}}</text>
+      <text>{{item.displayPerson || item.person}} · {{item.type}} <text class="source-pill {{item.sourceType === 'system' ? 'system' : ''}}">{{item.sourceLabel}}</text></text>
       <text>{{item.deltaText}}</text>
     </view>
     <view wx:if="{{!todayLogs.length}}" class="muted empty">这一天没有家务记录</view>
     <text class="section-title">运动</text>
     <view class="log-line sport-log" wx:for="{{todaySportsLogs}}" wx:key="id">
-      <text>{{item.displayPerson || item.person}} · {{item.type}}</text>
+      <text>{{item.displayPerson || item.person}} · {{item.type}} <text class="source-pill {{item.sourceType === 'system' ? 'system' : ''}}">{{item.sourceLabel}}</text></text>
       <text>{{item.rewardText}}</text>
     </view>
     <view wx:if="{{!todaySportsLogs.length}}" class="muted empty">这一天没有运动记录</view>
