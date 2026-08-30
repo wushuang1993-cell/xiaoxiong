@@ -1,7 +1,7 @@
 const DEFAULT_STATE = {
   people: [
     { name: "闪闪鱼", displayName: "闪闪鱼", wechatId: "shuang_wu83", openid: "oARbkxZvJaqo4ZvUb7cYzebpxi2k", coins: 0, redrawChances: 0, exchangeChances: 0, wishBear: "史迪奇", image: "../../assets/shanshanyu.png" },
-    { name: "杰尼龟", displayName: "杰尼龟", wechatId: "Alan0Xu", openid: "", coins: 0, redrawChances: 0, exchangeChances: 0, wishBear: "卢卡斯", image: "../../assets/jienigui.png" }
+    { name: "杰尼龟", displayName: "杰尼龟", wechatId: "Alan0Xu", openid: "oARbkxXMLbBTgt1PtABedW2BhwFk", coins: 0, redrawChances: 0, exchangeChances: 0, wishBear: "卢卡斯", image: "../../assets/jienigui.png" }
   ],
   bears: [
     { name: "史迪奇", image: "../../assets/stitch.png", active: true },

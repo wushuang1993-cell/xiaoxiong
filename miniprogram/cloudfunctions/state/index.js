@@ -10,7 +10,7 @@ const STATE_DOC_ID = "main";
 const REMOVED_BEAR_NAMES = [];
 const ALLOWED_PERSON_META = {
   闪闪鱼: { wechatId: "shuang_wu83", openid: "oARbkxZvJaqo4ZvUb7cYzebpxi2k" },
-  杰尼龟: { wechatId: "Alan0Xu" }
+  杰尼龟: { wechatId: "Alan0Xu", openid: "oARbkxXMLbBTgt1PtABedW2BhwFk" }
 };
 const ALLOWED_PERSON_NAMES = Object.keys(ALLOWED_PERSON_META);
 
