@@ -241,20 +241,24 @@ Page({
     const label = event.currentTarget.dataset.label;
     const now = new Date();
     const day = now.getDate();
+    const dateKey = formatDateKey(now);
+    const id = `sport-${dateKey}-${this.data.selectedPerson}-${label}`;
+    const chanceId = `sport-chance-${dateKey}-${this.data.selectedPerson}-${label}`;
     const state = normalizeState(this.data.state);
     state.sportsLogs = state.sportsLogs || {};
     state.sportsLogs[day] = state.sportsLogs[day] || [];
+    state.sportsLogs[day] = state.sportsLogs[day].filter((log) => log.id !== id);
     state.sportsLogs[day].push({
-      id: `sport-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      id,
       person: this.data.selectedPerson,
       type: label,
       detail: label,
-      date: formatDateKey(now),
+      date: dateKey,
       earnedDay: day,
       createdAt: now.toISOString()
     });
-    this.addRedrawChanceLog(state, this.data.selectedPerson, label);
-    state.actions = addAction(state, this.data.selectedPerson, "记录运动", `${label}，+1 申请重抽`);
+    this.addRedrawChanceLog(state, this.data.selectedPerson, label, chanceId, dateKey);
+    state.actions = addAction(state, this.data.selectedPerson, "记录运动", `${label}，+1 申请重抽`, `action-${id}`);
     await this.saveSportsState(state, "已记录运动");
   },
 
@@ -335,7 +339,7 @@ Page({
       date: dateKey,
       createdAt: now.toISOString()
     });
-    state.actions = addAction(state, this.data.selectedPerson, "更新步数", `${steps}`);
+    state.actions = addAction(state, this.data.selectedPerson, "更新步数", `${steps}`, `action-steps-${dateKey}-${this.data.selectedPerson}`);
     const awarded = this.awardStepWinnerIfReady(state, dateKey);
     this.setData({ stepsInput: "" });
     await this.saveSportsState(state, awarded ? "步数已结算" : "步数已更新");

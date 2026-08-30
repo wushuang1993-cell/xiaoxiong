@@ -33,6 +33,12 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function preferLatestItem(currentItem, nextItem) {
+  const currentTime = new Date(currentItem?.createdAt || 0).getTime();
+  const nextTime = new Date(nextItem?.createdAt || 0).getTime();
+  return nextTime >= currentTime ? nextItem : currentItem;
+}
+
 function mergeItems(remoteItems = [], localItems = [], keyForItem, mergeItem = (remoteItem, localItem) => ({ ...remoteItem, ...localItem })) {
   const map = new Map();
   remoteItems.forEach((item) => {
@@ -48,6 +54,17 @@ function mergeItems(remoteItems = [], localItems = [], keyForItem, mergeItem = (
 }
 
 function logKey(log, fallbackDay) {
+  if (log.date && log.person && log.type) {
+    return [
+      log.date,
+      log.person,
+      log.type,
+      log.detail || "",
+      log.delta || 0,
+      log.creditType || "",
+      fallbackDay || ""
+    ].join("|");
+  }
   return log.id || [
     log.person || "",
     log.type || "",
@@ -63,7 +80,7 @@ function mergeLogs(localLogs = {}, remoteLogs = {}) {
   const days = new Set([...Object.keys(remoteLogs || {}), ...Object.keys(localLogs || {})]);
   const merged = {};
   days.forEach((day) => {
-    merged[day] = mergeItems(remoteLogs[day] || [], localLogs[day] || [], (log) => logKey(log, day));
+    merged[day] = mergeItems(remoteLogs[day] || [], localLogs[day] || [], (log) => logKey(log, day), preferLatestItem);
   });
   return merged;
 }
@@ -72,7 +89,28 @@ function actionKey(action) {
   if (action.action === "今日已抽签") {
     return `draw:${action.date || ""}:${action.person || ""}`;
   }
+  if (action.action === "更新步数") {
+    return `steps:${action.date || action.day || ""}:${action.person || ""}`;
+  }
+  if (action.action === "步数胜者") {
+    return `steps-winner:${action.date || action.day || ""}:${action.person || ""}`;
+  }
+  if (["记录家务", "记录运动"].includes(action.action)) {
+    return `${action.action}:${action.date || action.day || ""}:${action.person || ""}:${action.detail || ""}`;
+  }
   return action.id || `${action.date || action.day}-${action.time}-${action.person}-${action.action}-${action.detail}`;
+}
+
+function mergeActions(localActions = [], remoteActions = []) {
+  const map = new Map();
+  const order = [];
+  [...(localActions || []), ...(remoteActions || [])].forEach((action) => {
+    const key = actionKey(action);
+    if (!key || map.has(key)) return;
+    map.set(key, clone(action));
+    order.push(key);
+  });
+  return order.map((key) => map.get(key)).slice(0, 80);
 }
 
 function sanitizeBears(bears = []) {
@@ -116,15 +154,17 @@ function mergeSportsLogs(localLogs = {}, remoteLogs = {}) {
   const days = new Set([...Object.keys(remoteLogs || {}), ...Object.keys(localLogs || {})]);
   const merged = {};
   days.forEach((day) => {
-    merged[day] = mergeItems(remoteLogs[day] || [], localLogs[day] || [], (log) => log.id || [
-      log.person || "",
-      log.type || "",
-      log.duration || 0,
-      log.steps || 0,
-      log.date || "",
-      log.createdAt || "",
-      day || ""
-    ].join("|"));
+    merged[day] = mergeItems(
+      remoteLogs[day] || [],
+      localLogs[day] || [],
+      (log) => {
+        if (log.date && log.person && log.type) {
+          return [log.date, log.person, log.type, log.detail || "", day || ""].join("|");
+        }
+        return log.id || [log.person || "", log.type || "", log.createdAt || "", day || ""].join("|");
+      },
+      preferLatestItem
+    );
   });
   return merged;
 }
@@ -136,7 +176,7 @@ function mergeWechatSteps(localSteps = {}, remoteSteps = {}) {
     merged[day] = mergeItems(
       remoteSteps[day] || [],
       localSteps[day] || [],
-      (item) => item.person || item.openid || item.id,
+      (item) => `${item.date || day}|${item.person || item.openid || item.id}`,
       (remoteItem, localItem) => ({ ...remoteItem, ...localItem, steps: Number(localItem.steps || remoteItem.steps || 0) })
     );
   });
@@ -195,11 +235,7 @@ function mergeState(localPayload, remotePayload, options = {}) {
     drawHistory,
     sportsLogs: mergeSportsLogs(localPayload.sportsLogs || {}, remotePayload.sportsLogs || {}),
     wechatSteps: mergeWechatSteps(localPayload.wechatSteps || {}, remotePayload.wechatSteps || {}),
-    actions: mergeItems(
-      remotePayload.actions || [],
-      localPayload.actions || [],
-      actionKey
-    ),
+    actions: mergeActions(localPayload.actions || [], remotePayload.actions || []),
     savedAt: localPayload.savedAt
   };
 }

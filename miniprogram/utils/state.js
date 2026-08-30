@@ -114,9 +114,52 @@ function normalizeLog(log, fallbackDay) {
   };
 }
 
+function preferLatestItem(currentItem, nextItem) {
+  const currentTime = new Date(currentItem?.createdAt || 0).getTime();
+  const nextTime = new Date(nextItem?.createdAt || 0).getTime();
+  return nextTime >= currentTime ? nextItem : currentItem;
+}
+
+function dedupeItems(items = [], keyForItem, mergeItem = preferLatestItem) {
+  const map = new Map();
+  const order = [];
+  (items || []).forEach((item) => {
+    const key = keyForItem(item);
+    if (!key) {
+      const fallbackKey = `fallback-${order.length}`;
+      map.set(fallbackKey, item);
+      order.push(fallbackKey);
+      return;
+    }
+    if (!map.has(key)) {
+      map.set(key, item);
+      order.push(key);
+      return;
+    }
+    map.set(key, mergeItem(map.get(key), item));
+  });
+  return order.map((key) => map.get(key));
+}
+
+function logDedupeKey(log, fallbackDay) {
+  const dateKey = log.date || formatDateKey(parseLogDate(log, fallbackDay));
+  if (!dateKey || !log.person || !log.type) return log.id || "";
+  return [
+    dateKey,
+    log.person,
+    log.type,
+    log.detail || "",
+    log.delta || 0,
+    log.creditType || ""
+  ].join("|");
+}
+
 function normalizeLogs(logs = {}) {
   return Object.keys(logs).reduce((nextLogs, day) => {
-    nextLogs[day] = (logs[day] || []).map((log) => normalizeLog(log, day));
+    nextLogs[day] = dedupeItems(
+      (logs[day] || []).map((log) => normalizeLog(log, day)),
+      (log) => logDedupeKey(log, day)
+    );
     return nextLogs;
   }, {});
 }
@@ -149,22 +192,49 @@ function normalizeSportsLog(log, fallbackDay) {
 
 function normalizeSportsLogs(logs = {}) {
   return Object.keys(logs).reduce((nextLogs, day) => {
-    nextLogs[day] = (logs[day] || []).map((log) => normalizeSportsLog(log, day));
+    nextLogs[day] = dedupeItems(
+      (logs[day] || []).map((log) => normalizeSportsLog(log, day)),
+      (log) => [
+        log.date || formatDateKey(parseLogDate(log, day)),
+        log.person || "",
+        log.type || "",
+        log.detail || ""
+      ].join("|")
+    );
     return nextLogs;
   }, {});
 }
 
 function normalizeWechatSteps(steps = {}) {
   return Object.keys(steps || {}).reduce((result, day) => {
-    result[day] = (steps[day] || []).map((item) => ({
-      ...item,
-      id: item.id || `steps-${item.date || day}-${item.person || ""}`,
-      steps: Number(item.steps || 0),
-      date: item.date || item.day || formatDateKey(),
-      createdAt: item.createdAt || new Date().toISOString()
-    }));
+    result[day] = dedupeItems(
+      (steps[day] || []).map((item) => ({
+        ...item,
+        id: item.id || `steps-${item.date || day}-${item.person || ""}`,
+        steps: Number(item.steps || 0),
+        date: item.date || item.day || formatDateKey(),
+        createdAt: item.createdAt || new Date().toISOString()
+      })),
+      (item) => `${item.date || day}|${item.person || item.openid || ""}`
+    );
     return result;
   }, {});
+}
+
+function actionDedupeKey(action) {
+  if (!action) return "";
+  const date = action.date || action.day || "";
+  if (action.action === "今日已抽签") return `draw|${date}|${action.person || ""}`;
+  if (action.action === "更新步数") return `steps|${date}|${action.person || ""}`;
+  if (action.action === "步数胜者") return `steps-winner|${date}|${action.person || ""}`;
+  if (["记录家务", "记录运动"].includes(action.action)) {
+    return `${action.action}|${date}|${action.person || ""}|${action.detail || ""}`;
+  }
+  return action.id || `${date}|${action.time || ""}|${action.person || ""}|${action.action || ""}|${action.detail || ""}`;
+}
+
+function normalizeActions(actions = []) {
+  return dedupeItems(actions || [], actionDedupeKey, (currentAction) => currentAction).slice(0, 80);
 }
 
 function ruleAmount(rule) {
@@ -370,7 +440,7 @@ function normalizeState(state = DEFAULT_STATE) {
     pendingAuction: null,
     people: calculateChances(people, logs),
     bears,
-    actions: state.actions || [],
+    actions: normalizeActions(state.actions || []),
     logs,
     drawHistory,
     sportsLogs,
@@ -448,17 +518,16 @@ function drawBears(state) {
 function addAction(state, person, action, detail = "", id = "") {
   const actions = state.actions || [];
   const now = new Date();
-  return [
-    {
-      id: id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      date: formatDateKey(now),
-      time: now.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
-      person: person || "未登录",
-      action,
-      detail: detail || ""
-    },
-    ...actions
-  ].slice(0, 80);
+  const nextAction = {
+    id: id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    date: formatDateKey(now),
+    time: now.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
+    person: person || "未登录",
+    action,
+    detail: detail || ""
+  };
+  const key = actionDedupeKey(nextAction);
+  return [nextAction, ...actions.filter((item) => actionDedupeKey(item) !== key)].slice(0, 80);
 }
 
 async function loadState() {

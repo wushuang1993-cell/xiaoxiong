@@ -215,26 +215,29 @@ Page({
       wx.showToast({ title: "请先选择人物", icon: "none" });
       return;
     }
-    const day = new Date().getDate();
     const label = event.currentTarget.dataset.label;
     const delta = Number(event.currentTarget.dataset.delta || 0);
     const creditType = event.currentTarget.dataset.creditType || "";
     const today = new Date();
+    const day = today.getDate();
+    const dateKey = formatDateKey(today);
+    const id = `log-${dateKey}-${this.data.selectedPerson}-${label}`;
     const state = { ...this.data.state };
     state.logs = state.logs || {};
     state.logs[day] = state.logs[day] || [];
+    state.logs[day] = state.logs[day].filter((log) => log.id !== id);
     state.logs[day].push({
-      id: `log-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      id,
       person: this.data.selectedPerson,
       type: label,
       detail: label,
       delta,
       creditType,
-      date: formatDateKey(today),
+      date: dateKey,
       earnedDay: day,
       createdAt: today.toISOString()
     });
-    state.actions = addAction(state, this.data.selectedPerson, "记录家务", label);
+    state.actions = addAction(state, this.data.selectedPerson, "记录家务", label, `action-${id}`);
     try {
       const nextState = normalizeState(state);
       await saveState(nextState);
